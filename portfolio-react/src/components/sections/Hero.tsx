@@ -1,5 +1,5 @@
 ﻿import { motion } from "framer-motion";
-import { FaGithub, FaTwitter, FaInstagram, FaFacebook, FaLinkedin, FaPrint } from "react-icons/fa";
+import { FaGithub, FaTwitter, FaInstagram, FaFacebook, FaLinkedin } from "react-icons/fa";
 
 export default function Hero() {
   const socialLinks = [
@@ -87,14 +87,9 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 1 }}
           className="flex flex-wrap gap-4 justify-center"
         >
-          <button className="flex items-center gap-3 px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold transition-all duration-300 transform hover:scale-105">
-            <FaPrint />
-            Print Resume
-          </button>
-
           <a
             href="#portfolio"
-            className="px-8 py-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full font-semibold transition-all duration-300 transform hover:scale-105"
+            className="px-8 py-4 bg-gradient-to-r from-primary-600 to-pink-600 hover:from-primary-700 hover:to-pink-700 text-white rounded-full font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
             View My Work
           </a>
