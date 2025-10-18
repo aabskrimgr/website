@@ -77,9 +77,10 @@ export default function Navbar() {
       animate={{ y: 0 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled || isMobileMenuOpen
-          ? 'bg-white dark:bg-gray-900 shadow-lg' 
+          ? 'bg-white dark:bg-gray-900 shadow-lg backdrop-blur-none' 
           : 'bg-transparent'
       }`}
+      style={isMobileMenuOpen ? { backgroundColor: 'rgb(17, 24, 39)' } : undefined}
     >
       <div className="container-custom px-6 py-4">
         <div className="flex items-center justify-between">
@@ -162,6 +163,7 @@ export default function Navbar() {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
               className="md:hidden mt-4 overflow-hidden bg-gray-900 rounded-lg shadow-xl"
+              style={{ backgroundColor: 'rgb(17, 24, 39)' }}
             >
               <div className="flex flex-col gap-4 py-4 px-4">
                 {navLinks.map((link) => (
