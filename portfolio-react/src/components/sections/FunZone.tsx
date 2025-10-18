@@ -39,6 +39,10 @@ export default function FunZone() {
   const [chessMessage, setChessMessage] = useState<string>('Your turn! (White pieces)');
   const [lastMove, setLastMove] = useState<[[number, number], [number, number]] | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const [chessMode, setChessMode] = useState<'1-player' | '2-player'>('1-player');
+  const [whiteScore, setWhiteScore] = useState(0);
+  const [blackScore, setBlackScore] = useState(0);
+  const [currentTurn, setCurrentTurn] = useState<'white' | 'black'>('white');
 
   // Initialize visitor count with real API
   useEffect(() => {
@@ -229,6 +233,18 @@ export default function FunZone() {
     setRpsResult(null);
   };
 
+  // Get piece value for scoring
+  const getPieceValue = (piece: string): number => {
+    const values: { [key: string]: number } = {
+      '♙': 1, '♟': 1,  // Pawns
+      '♘': 3, '♞': 3,  // Knights
+      '♗': 3, '♝': 3,  // Bishops
+      '♖': 5, '♜': 5,  // Rooks
+      '♕': 9, '♛': 9,  // Queens
+    };
+    return values[piece] || 0;
+  };
+
   // Chess logic with rules
   const isWhitePiece = (piece: string) => ['♙', '♖', '♘', '♗', '♕', '♔'].includes(piece);
   const isBlackPiece = (piece: string) => ['♟', '♜', '♞', '♝', '♛', '♚'].includes(piece);
@@ -416,17 +432,41 @@ export default function FunZone() {
       const [selectedRow, selectedCol] = selectedSquare;
       const selectedPiece = chessBoard[selectedRow][selectedCol];
       
-      // Try to move with rules
-      if (isWhitePiece(selectedPiece) && isValidMove(chessBoard, selectedRow, selectedCol, row, col)) {
+      // In 2-player mode, check turn
+      if (chessMode === '2-player') {
+        if (currentTurn === 'white' && !isWhitePiece(selectedPiece)) return;
+        if (currentTurn === 'black' && !isBlackPiece(selectedPiece)) return;
+      }
+      
+      // Try to move with rules (white in 1-player, or current turn in 2-player)
+      const canMove = chessMode === '1-player' 
+        ? isWhitePiece(selectedPiece) 
+        : (currentTurn === 'white' && isWhitePiece(selectedPiece)) || (currentTurn === 'black' && isBlackPiece(selectedPiece));
+      
+      if (canMove && isValidMove(chessBoard, selectedRow, selectedCol, row, col)) {
         const newBoard = chessBoard.map(r => [...r]);
+        const capturedPiece = chessBoard[row][col];
+        
+        // Update score if piece captured
+        if (capturedPiece) {
+          const pieceValue = getPieceValue(capturedPiece);
+          if (isWhitePiece(selectedPiece)) {
+            setWhiteScore(prev => prev + pieceValue);
+          } else {
+            setBlackScore(prev => prev + pieceValue);
+          }
+        }
         
         // Handle en passant capture
-        if (selectedPiece === '♙' && Math.abs(col - selectedCol) === 1 && !chessBoard[row][col]) {
-          // En passant capture - remove the captured pawn
+        if ((selectedPiece === '♙' || selectedPiece === '♟') && Math.abs(col - selectedCol) === 1 && !chessBoard[row][col]) {
           if (lastMove) {
             const [[, ], [lastToRow, lastToCol]] = lastMove;
-            if (chessBoard[lastToRow][lastToCol] === '♟' && lastToCol === col && lastToRow === row + 1) {
+            if (selectedPiece === '♙' && chessBoard[lastToRow][lastToCol] === '♟' && lastToCol === col && lastToRow === row + 1) {
               newBoard[row + 1][col] = '';
+              setWhiteScore(prev => prev + 1); // Pawn value
+            } else if (selectedPiece === '♟' && chessBoard[lastToRow][lastToCol] === '♙' && lastToCol === col && lastToRow === row - 1) {
+              newBoard[row - 1][col] = '';
+              setBlackScore(prev => prev + 1); // Pawn value
             }
           }
         }
@@ -437,36 +477,72 @@ export default function FunZone() {
         setLastMove([[selectedRow, selectedCol], [row, col]]);
         setSelectedSquare(null);
         
-        // Check for checkmate/stalemate after player's move
-        if (isCheckmate(newBoard, false)) {
-          setChessMessage('Checkmate! You win! 🎉');
-          setGameOver(true);
-          return;
-        }
-        if (isStalemate(newBoard, false)) {
-          setChessMessage('Stalemate! It\'s a draw.');
-          setGameOver(true);
-          return;
-        }
-        if (isKingInCheck(newBoard, false)) {
-          setChessMessage('Check! Computer is thinking...');
+        // In 2-player mode
+        if (chessMode === '2-player') {
+          const nextTurn = currentTurn === 'white' ? 'black' : 'white';
+          const isNextWhite = nextTurn === 'white';
+          
+          if (isCheckmate(newBoard, isNextWhite)) {
+            setChessMessage(`Checkmate! ${currentTurn === 'white' ? 'White' : 'Black'} wins! 🎉`);
+            setGameOver(true);
+            return;
+          }
+          if (isStalemate(newBoard, isNextWhite)) {
+            setChessMessage('Stalemate! It\'s a draw.');
+            setGameOver(true);
+            return;
+          }
+          
+          setCurrentTurn(nextTurn);
+          if (isKingInCheck(newBoard, isNextWhite)) {
+            setChessMessage(`Check! ${nextTurn === 'white' ? 'White' : 'Black'}'s turn`);
+          } else {
+            setChessMessage(`${nextTurn === 'white' ? 'White' : 'Black'}'s turn`);
+          }
         } else {
-          setChessMessage('Computer is thinking...');
+          // 1-player mode - check for checkmate/stalemate after player's move
+          if (isCheckmate(newBoard, false)) {
+            setChessMessage('Checkmate! You win! 🎉');
+            setGameOver(true);
+            return;
+          }
+          if (isStalemate(newBoard, false)) {
+            setChessMessage('Stalemate! It\'s a draw.');
+            setGameOver(true);
+            return;
+          }
+          if (isKingInCheck(newBoard, false)) {
+            setChessMessage('Check! Computer is thinking...');
+          } else {
+            setChessMessage('Computer is thinking...');
+          }
+          
+          // Computer's turn with rules
+          setTimeout(() => {
+            makeComputerChessMove(newBoard);
+          }, 500);
         }
-        
-        // Computer's turn with rules
-        setTimeout(() => {
-          makeComputerChessMove(newBoard);
-        }, 500);
       } else {
         setSelectedSquare(null);
         setChessMessage('Invalid move! Try again.');
       }
     } else {
-      // Select a white piece
-      if (isWhitePiece(piece)) {
-        setSelectedSquare([row, col]);
-        setChessMessage('Select where to move');
+      // Select a piece
+      if (chessMode === '1-player') {
+        // Only white pieces in 1-player mode
+        if (isWhitePiece(piece)) {
+          setSelectedSquare([row, col]);
+          setChessMessage('Select where to move');
+        }
+      } else {
+        // 2-player mode - select based on turn
+        if (currentTurn === 'white' && isWhitePiece(piece)) {
+          setSelectedSquare([row, col]);
+          setChessMessage('White: Select where to move');
+        } else if (currentTurn === 'black' && isBlackPiece(piece)) {
+          setSelectedSquare([row, col]);
+          setChessMessage('Black: Select where to move');
+        }
       }
     }
   };
@@ -497,6 +573,13 @@ export default function FunZone() {
       const [[fromRow, fromCol], [toRow, toCol]] = validMoves[Math.floor(Math.random() * validMoves.length)];
       const newBoard = board.map(r => [...r]);
       const movingPiece = board[fromRow][fromCol];
+      const capturedPiece = board[toRow][toCol];
+      
+      // Update score if piece captured
+      if (capturedPiece) {
+        const pieceValue = getPieceValue(capturedPiece);
+        setBlackScore(prev => prev + pieceValue);
+      }
       
       // Handle en passant capture for black pawn
       if (movingPiece === '♟' && Math.abs(toCol - fromCol) === 1 && !board[toRow][toCol]) {
@@ -504,6 +587,7 @@ export default function FunZone() {
           const [[, ], [lastToRow, lastToCol]] = lastMove;
           if (board[lastToRow][lastToCol] === '♙' && lastToCol === toCol && lastToRow === toRow - 1) {
             newBoard[toRow - 1][toCol] = '';
+            setBlackScore(prev => prev + 1); // Pawn value
           }
         }
       }
@@ -537,9 +621,16 @@ export default function FunZone() {
   const resetChess = () => {
     setChessBoard(initialChessBoard);
     setSelectedSquare(null);
-    setChessMessage('Your turn! (White pieces)');
     setLastMove(null);
     setGameOver(false);
+    setWhiteScore(0);
+    setBlackScore(0);
+    setCurrentTurn('white');
+    if (chessMode === '1-player') {
+      setChessMessage('Your turn! (White pieces)');
+    } else {
+      setChessMessage('White\'s turn');
+    }
   };
 
   return (
@@ -815,7 +906,7 @@ export default function FunZone() {
                   Mini Chess
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Play against computer!
+                  {chessMode === '1-player' ? 'Play vs Computer' : 'Play vs Friend'}
                 </p>
               </div>
             </div>
@@ -827,39 +918,100 @@ export default function FunZone() {
               </p>
             </div>
 
-            {/* Chess Board */}
-            <div className="grid grid-cols-8 gap-0 mb-4 border-4 border-gray-800 dark:border-gray-600 rounded-lg overflow-hidden">
-              {chessBoard.map((row, i) =>
-                row.map((piece, j) => {
-                  const isLight = (i + j) % 2 === 0;
-                  const isSelected = selectedSquare?.[0] === i && selectedSquare?.[1] === j;
-                  return (
-                    <motion.button
-                      key={`${i}-${j}`}
-                      onClick={() => handleChessSquareClick(i, j)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`aspect-square flex items-center justify-center text-2xl ${
-                        isLight
-                          ? 'bg-amber-200 dark:bg-amber-700'
-                          : 'bg-amber-600 dark:bg-amber-900'
-                      } ${
-                        isSelected
-                          ? 'ring-4 ring-green-500'
-                          : ''
-                      } hover:brightness-110 transition-all`}
-                    >
-                      {piece}
-                    </motion.button>
-                  );
-                })
-              )}
+            {/* Game Container with Player Labels */}
+            <div className="relative">
+              {/* Top Player (Computer/Black) */}
+              <div className="flex items-center justify-between mb-2 px-2">
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl">♚</div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      {chessMode === '1-player' ? 'Computer' : 'Black'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Points: {blackScore}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chess Board */}
+              <div className="grid grid-cols-8 gap-0 mb-2 border-4 border-gray-800 dark:border-gray-600 rounded-lg overflow-hidden">
+                {chessBoard.map((row, i) =>
+                  row.map((piece, j) => {
+                    const isLight = (i + j) % 2 === 0;
+                    const isSelected = selectedSquare?.[0] === i && selectedSquare?.[1] === j;
+                    return (
+                      <motion.button
+                        key={`${i}-${j}`}
+                        onClick={() => handleChessSquareClick(i, j)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`aspect-square flex items-center justify-center text-2xl ${
+                          isLight
+                            ? 'bg-amber-200 dark:bg-amber-700'
+                            : 'bg-amber-600 dark:bg-amber-900'
+                        } ${
+                          isSelected
+                            ? 'ring-4 ring-green-500'
+                            : ''
+                        } hover:brightness-110 transition-all`}
+                      >
+                        {piece}
+                      </motion.button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Bottom Player (Visitor/White) */}
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl">♔</div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      {chessMode === '1-player' ? 'You' : 'White'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Points: {whiteScore}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Instructions & Reset */}
+            {/* Mode Selection & Reset */}
             <div className="text-center space-y-3">
+              <div className="flex items-center justify-center space-x-2 mb-3">
+                <button
+                  onClick={() => {
+                    setChessMode('1-player');
+                    resetChess();
+                  }}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                    chessMode === '1-player'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  1 Player
+                </button>
+                <button
+                  onClick={() => {
+                    setChessMode('2-player');
+                    resetChess();
+                  }}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                    chessMode === '2-player'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  2 Player
+                </button>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                Click a white piece, then click where to move it
+                {chessMode === '1-player' ? 'You play as White pieces' : 'Take turns playing'}
               </p>
               <button
                 onClick={resetChess}
