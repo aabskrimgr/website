@@ -42,11 +42,31 @@ export default function Navbar() {
     { name: 'Contact', href: '#contact' },
   ];
 
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const targetId = href.replace('#', '');
+    const targetSection = document.getElementById(targetId);
+    if (targetSection) {
+      const navbarHeight = 80; // Approximate navbar height
+      const targetPosition = targetSection.offsetTop - navbarHeight;
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   const scrollToFunZone = (e: React.MouseEvent) => {
     e.preventDefault();
     const funZoneSection = document.getElementById('fun-zone');
     if (funZoneSection) {
-      funZoneSection.scrollIntoView({ behavior: 'smooth' });
+      const navbarHeight = 80;
+      const targetPosition = funZoneSection.offsetTop - navbarHeight;
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
       setIsMobileMenuOpen(false);
     }
   };
@@ -78,6 +98,7 @@ export default function Navbar() {
               <motion.a
                 key={link.name}
                 href={link.href}
+                onClick={(e) => scrollToSection(e, link.href)}
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -140,14 +161,14 @@ export default function Navbar() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="md:hidden mt-4 overflow-hidden"
+              className="md:hidden mt-4 overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-lg"
             >
-              <div className="flex flex-col gap-4 py-4">
+              <div className="flex flex-col gap-4 py-4 px-4">
                 {navLinks.map((link) => (
                   <a
                     key={link.name}
                     href={link.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={(e) => scrollToSection(e, link.href)}
                     className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-500 transition-colors duration-300 font-medium py-2"
                   >
                     {link.name}
