@@ -34,6 +34,17 @@ export default function Navbar() {
     }
   }, [isDarkMode]);
 
+  // Lock body scroll when mobile menu is open (prevents background scroll and weird overlay artifacts)
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    }
+  }, [isMobileMenuOpen]);
+
   const navLinks = [
     { name: 'Home', href: '#home' },
     { name: 'About', href: '#about' },
@@ -154,39 +165,54 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Backdrop + Mobile Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="md:hidden mt-4 overflow-hidden bg-gray-900 rounded-lg shadow-xl"
-              style={{ backgroundColor: 'rgb(17, 24, 39)' }}
-            >
-              <div className="flex flex-col gap-4 py-4 px-4">
-                {navLinks.map((link) => (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    onClick={(e) => scrollToSection(e, link.href)}
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-500 transition-colors duration-300 font-medium py-2"
+            <>
+              {/* Backdrop */}
+              <motion.div
+                key="backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/60 md:hidden z-40"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+
+              {/* Full-screen slide-down panel */}
+              <motion.div
+                key="mobile-menu"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+                className="fixed inset-x-0 top-[72px] bottom-0 md:hidden z-50 overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
+                style={{ backgroundColor: isDarkMode ? 'rgb(17, 24, 39)' : 'rgb(255,255,255)' }}
+              >
+                <div className="flex flex-col gap-4 py-4 px-6">
+                  {navLinks.map((link) => (
+                    <a
+                      key={link.name}
+                      href={link.href}
+                      onClick={(e) => scrollToSection(e, link.href)}
+                      className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-500 transition-colors duration-300 font-medium py-2"
+                    >
+                      {link.name}
+                    </a>
+                  ))}
+                  
+                  {/* Fun Zone Link for Mobile */}
+                  <button
+                    onClick={scrollToFunZone}
+                    className="mt-2 flex items-center gap-3 text-left text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium py-3 px-4 rounded-lg"
                   >
-                    {link.name}
-                  </a>
-                ))}
-                
-                {/* Fun Zone Link for Mobile */}
-                <button
-                  onClick={scrollToFunZone}
-                  className="flex items-center gap-3 text-left text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium py-3 px-4 rounded-lg"
-                >
-                  <FaGamepad size={20} />
-                  <span>Fun Zone - Games!</span>
-                </button>
-              </div>
-            </motion.div>
+                    <FaGamepad size={20} />
+                    <span>Fun Zone - Games!</span>
+                  </button>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>
