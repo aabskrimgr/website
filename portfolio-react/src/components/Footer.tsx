@@ -185,10 +185,6 @@ export default function Footer() {
             </a>
           </p>
 
-          <div className="flex items-center gap-4 text-sm text-gray-400">
-            <span>Made with React + TypeScript + Tailwind CSS</span>
-          </div>
-
           {/* Back to Top Button */}
           <motion.button
             onClick={scrollToTop}
