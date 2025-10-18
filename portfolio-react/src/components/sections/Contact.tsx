@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { FaEnvelope, FaMapMarkerAlt, FaGithub, FaTwitter, FaInstagram, FaFacebook, FaLinkedin } from 'react-icons/fa';
+import { FaEnvelope, FaMapMarkerAlt, FaGithub, FaTwitter, FaInstagram, FaFacebook, FaLinkedin, FaChess } from 'react-icons/fa';
 import emailjs from '@emailjs/browser';
 
 export default function Contact() {
@@ -200,6 +200,22 @@ export default function Contact() {
                     </a>
                   ))}
                 </div>
+              </div>
+
+              {/* Chess Section */}
+              <div className="mt-8 pt-8 border-t border-white/20">
+                <a
+                  href="https://www.chess.com/member/aabiskar_regmi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-white/10 hover:bg-white/20 p-4 rounded-xl transition-all duration-300 group"
+                >
+                  <FaChess className="text-3xl group-hover:scale-110 transition-transform" />
+                  <div>
+                    <h6 className="font-semibold text-lg">Let's Play Chess!</h6>
+                    <p className="text-white/80 text-sm">Challenge me on Chess.com</p>
+                  </div>
+                </a>
               </div>
             </div>
           </motion.div>
