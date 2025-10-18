@@ -37,6 +37,8 @@ export default function FunZone() {
   const [chessBoard, setChessBoard] = useState(initialChessBoard);
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null);
   const [chessMessage, setChessMessage] = useState<string>('Your turn! (White pieces)');
+  const [lastMove, setLastMove] = useState<[[number, number], [number, number]] | null>(null);
+  const [gameOver, setGameOver] = useState(false);
 
   // Initialize visitor count with real API
   useEffect(() => {
@@ -231,7 +233,44 @@ export default function FunZone() {
   const isWhitePiece = (piece: string) => ['♙', '♖', '♘', '♗', '♕', '♔'].includes(piece);
   const isBlackPiece = (piece: string) => ['♟', '♜', '♞', '♝', '♛', '♚'].includes(piece);
 
-  const isValidMove = (board: string[][], fromRow: number, fromCol: number, toRow: number, toCol: number): boolean => {
+  const findKingPosition = (board: string[][], isWhite: boolean): [number, number] | null => {
+    const king = isWhite ? '♔' : '♚';
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (board[i][j] === king) return [i, j];
+      }
+    }
+    return null;
+  };
+
+  const isSquareUnderAttack = (board: string[][], row: number, col: number, byWhite: boolean): boolean => {
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        const piece = board[i][j];
+        if (byWhite && isWhitePiece(piece)) {
+          if (isValidMoveSimple(board, i, j, row, col)) return true;
+        } else if (!byWhite && isBlackPiece(piece)) {
+          if (isValidMoveSimple(board, i, j, row, col)) return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const isKingInCheck = (board: string[][], isWhite: boolean): boolean => {
+    const kingPos = findKingPosition(board, isWhite);
+    if (!kingPos) return false;
+    return isSquareUnderAttack(board, kingPos[0], kingPos[1], !isWhite);
+  };
+
+  const wouldBeInCheck = (board: string[][], fromRow: number, fromCol: number, toRow: number, toCol: number, isWhite: boolean): boolean => {
+    const newBoard = board.map(r => [...r]);
+    newBoard[toRow][toCol] = board[fromRow][fromCol];
+    newBoard[fromRow][fromCol] = '';
+    return isKingInCheck(newBoard, isWhite);
+  };
+
+  const isValidMoveSimple = (board: string[][], fromRow: number, fromCol: number, toRow: number, toCol: number): boolean => {
     const piece = board[fromRow][fromCol];
     const target = board[toRow][toCol];
     const rowDiff = Math.abs(toRow - fromRow);
@@ -248,6 +287,13 @@ export default function FunZone() {
         if (fromRow === 6 && toRow === 4 && !board[5][fromCol]) return true; // Initial 2-square move
       }
       if (rowDiff === 1 && colDiff === 1 && toRow === fromRow - 1 && target) return true; // Capture diagonally
+      // En passant
+      if (lastMove && rowDiff === 1 && colDiff === 1 && toRow === fromRow - 1 && !target) {
+        const [[lastFromRow, ], [lastToRow, lastToCol]] = lastMove;
+        if (board[lastToRow][lastToCol] === '♟' && lastFromRow === 1 && lastToRow === 3 && lastToCol === toCol && fromRow === 3) {
+          return true;
+        }
+      }
     }
     if (piece === '♟') { // Black pawn
       if (fromCol === toCol && !target) {
@@ -255,6 +301,13 @@ export default function FunZone() {
         if (fromRow === 1 && toRow === 3 && !board[2][fromCol]) return true;
       }
       if (rowDiff === 1 && colDiff === 1 && toRow === fromRow + 1 && target) return true;
+      // En passant
+      if (lastMove && rowDiff === 1 && colDiff === 1 && toRow === fromRow + 1 && !target) {
+        const [[lastFromRow, ], [lastToRow, lastToCol]] = lastMove;
+        if (board[lastToRow][lastToCol] === '♙' && lastFromRow === 6 && lastToRow === 4 && lastToCol === toCol && fromRow === 4) {
+          return true;
+        }
+      }
     }
 
     // Rook moves
@@ -319,7 +372,44 @@ export default function FunZone() {
     return false;
   };
 
+  const isValidMove = (board: string[][], fromRow: number, fromCol: number, toRow: number, toCol: number): boolean => {
+    const piece = board[fromRow][fromCol];
+    if (!isValidMoveSimple(board, fromRow, fromCol, toRow, toCol)) return false;
+    
+    // Check if move would put own king in check
+    const isWhite = isWhitePiece(piece);
+    return !wouldBeInCheck(board, fromRow, fromCol, toRow, toCol, isWhite);
+  };
+
+  const hasValidMoves = (board: string[][], isWhite: boolean): boolean => {
+    for (let fromRow = 0; fromRow < 8; fromRow++) {
+      for (let fromCol = 0; fromCol < 8; fromCol++) {
+        const piece = board[fromRow][fromCol];
+        if ((isWhite && isWhitePiece(piece)) || (!isWhite && isBlackPiece(piece))) {
+          for (let toRow = 0; toRow < 8; toRow++) {
+            for (let toCol = 0; toCol < 8; toCol++) {
+              if (isValidMove(board, fromRow, fromCol, toRow, toCol)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  };
+
+  const isCheckmate = (board: string[][], isWhite: boolean): boolean => {
+    return isKingInCheck(board, isWhite) && !hasValidMoves(board, isWhite);
+  };
+
+  const isStalemate = (board: string[][], isWhite: boolean): boolean => {
+    return !isKingInCheck(board, isWhite) && !hasValidMoves(board, isWhite);
+  };
+
   const handleChessSquareClick = (row: number, col: number) => {
+    if (gameOver) return;
+    
     const piece = chessBoard[row][col];
     
     if (selectedSquare) {
@@ -329,11 +419,40 @@ export default function FunZone() {
       // Try to move with rules
       if (isWhitePiece(selectedPiece) && isValidMove(chessBoard, selectedRow, selectedCol, row, col)) {
         const newBoard = chessBoard.map(r => [...r]);
+        
+        // Handle en passant capture
+        if (selectedPiece === '♙' && Math.abs(col - selectedCol) === 1 && !chessBoard[row][col]) {
+          // En passant capture - remove the captured pawn
+          if (lastMove) {
+            const [[, ], [lastToRow, lastToCol]] = lastMove;
+            if (chessBoard[lastToRow][lastToCol] === '♟' && lastToCol === col && lastToRow === row + 1) {
+              newBoard[row + 1][col] = '';
+            }
+          }
+        }
+        
         newBoard[row][col] = selectedPiece;
         newBoard[selectedRow][selectedCol] = '';
         setChessBoard(newBoard);
+        setLastMove([[selectedRow, selectedCol], [row, col]]);
         setSelectedSquare(null);
-        setChessMessage('Computer is thinking...');
+        
+        // Check for checkmate/stalemate after player's move
+        if (isCheckmate(newBoard, false)) {
+          setChessMessage('Checkmate! You win! 🎉');
+          setGameOver(true);
+          return;
+        }
+        if (isStalemate(newBoard, false)) {
+          setChessMessage('Stalemate! It\'s a draw.');
+          setGameOver(true);
+          return;
+        }
+        if (isKingInCheck(newBoard, false)) {
+          setChessMessage('Check! Computer is thinking...');
+        } else {
+          setChessMessage('Computer is thinking...');
+        }
         
         // Computer's turn with rules
         setTimeout(() => {
@@ -377,10 +496,39 @@ export default function FunZone() {
     if (validMoves.length > 0) {
       const [[fromRow, fromCol], [toRow, toCol]] = validMoves[Math.floor(Math.random() * validMoves.length)];
       const newBoard = board.map(r => [...r]);
-      newBoard[toRow][toCol] = board[fromRow][fromCol];
+      const movingPiece = board[fromRow][fromCol];
+      
+      // Handle en passant capture for black pawn
+      if (movingPiece === '♟' && Math.abs(toCol - fromCol) === 1 && !board[toRow][toCol]) {
+        if (lastMove) {
+          const [[, ], [lastToRow, lastToCol]] = lastMove;
+          if (board[lastToRow][lastToCol] === '♙' && lastToCol === toCol && lastToRow === toRow - 1) {
+            newBoard[toRow - 1][toCol] = '';
+          }
+        }
+      }
+      
+      newBoard[toRow][toCol] = movingPiece;
       newBoard[fromRow][fromCol] = '';
       setChessBoard(newBoard);
-      setChessMessage('Your turn! (White pieces)');
+      setLastMove([[fromRow, fromCol], [toRow, toCol]]);
+      
+      // Check for checkmate/stalemate after computer's move
+      if (isCheckmate(newBoard, true)) {
+        setChessMessage('Checkmate! Computer wins!');
+        setGameOver(true);
+        return;
+      }
+      if (isStalemate(newBoard, true)) {
+        setChessMessage('Stalemate! It\'s a draw.');
+        setGameOver(true);
+        return;
+      }
+      if (isKingInCheck(newBoard, true)) {
+        setChessMessage('Check! Your turn (White pieces)');
+      } else {
+        setChessMessage('Your turn! (White pieces)');
+      }
     } else {
       setChessMessage('Computer has no valid moves!');
     }
@@ -390,6 +538,8 @@ export default function FunZone() {
     setChessBoard(initialChessBoard);
     setSelectedSquare(null);
     setChessMessage('Your turn! (White pieces)');
+    setLastMove(null);
+    setGameOver(false);
   };
 
   return (
