@@ -227,9 +227,97 @@ export default function FunZone() {
     setRpsResult(null);
   };
 
-  // Simple Chess logic
+  // Chess logic with rules
   const isWhitePiece = (piece: string) => ['♙', '♖', '♘', '♗', '♕', '♔'].includes(piece);
   const isBlackPiece = (piece: string) => ['♟', '♜', '♞', '♝', '♛', '♚'].includes(piece);
+
+  const isValidMove = (board: string[][], fromRow: number, fromCol: number, toRow: number, toCol: number): boolean => {
+    const piece = board[fromRow][fromCol];
+    const target = board[toRow][toCol];
+    const rowDiff = Math.abs(toRow - fromRow);
+    const colDiff = Math.abs(toCol - fromCol);
+
+    // Can't capture own pieces
+    if (isWhitePiece(piece) && isWhitePiece(target)) return false;
+    if (isBlackPiece(piece) && isBlackPiece(target)) return false;
+
+    // Pawn moves
+    if (piece === '♙') { // White pawn
+      if (fromCol === toCol && !target) {
+        if (toRow === fromRow - 1) return true; // Move forward
+        if (fromRow === 6 && toRow === 4 && !board[5][fromCol]) return true; // Initial 2-square move
+      }
+      if (rowDiff === 1 && colDiff === 1 && toRow === fromRow - 1 && target) return true; // Capture diagonally
+    }
+    if (piece === '♟') { // Black pawn
+      if (fromCol === toCol && !target) {
+        if (toRow === fromRow + 1) return true;
+        if (fromRow === 1 && toRow === 3 && !board[2][fromCol]) return true;
+      }
+      if (rowDiff === 1 && colDiff === 1 && toRow === fromRow + 1 && target) return true;
+    }
+
+    // Rook moves
+    if (piece === '♖' || piece === '♜') {
+      if (fromRow === toRow || fromCol === toCol) {
+        // Check path is clear
+        const rowStep = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
+        const colStep = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
+        let checkRow = fromRow + rowStep;
+        let checkCol = fromCol + colStep;
+        while (checkRow !== toRow || checkCol !== toCol) {
+          if (board[checkRow][checkCol]) return false;
+          checkRow += rowStep;
+          checkCol += colStep;
+        }
+        return true;
+      }
+    }
+
+    // Knight moves
+    if (piece === '♘' || piece === '♞') {
+      if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) return true;
+    }
+
+    // Bishop moves
+    if (piece === '♗' || piece === '♝') {
+      if (rowDiff === colDiff) {
+        const rowStep = toRow > fromRow ? 1 : -1;
+        const colStep = toCol > fromCol ? 1 : -1;
+        let checkRow = fromRow + rowStep;
+        let checkCol = fromCol + colStep;
+        while (checkRow !== toRow) {
+          if (board[checkRow][checkCol]) return false;
+          checkRow += rowStep;
+          checkCol += colStep;
+        }
+        return true;
+      }
+    }
+
+    // Queen moves (combination of rook and bishop)
+    if (piece === '♕' || piece === '♛') {
+      if (fromRow === toRow || fromCol === toCol || rowDiff === colDiff) {
+        const rowStep = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
+        const colStep = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
+        let checkRow = fromRow + rowStep;
+        let checkCol = fromCol + colStep;
+        while (checkRow !== toRow || checkCol !== toCol) {
+          if (board[checkRow][checkCol]) return false;
+          checkRow += rowStep;
+          checkCol += colStep;
+        }
+        return true;
+      }
+    }
+
+    // King moves
+    if (piece === '♔' || piece === '♚') {
+      if (rowDiff <= 1 && colDiff <= 1) return true;
+    }
+
+    return false;
+  };
 
   const handleChessSquareClick = (row: number, col: number) => {
     const piece = chessBoard[row][col];
@@ -238,8 +326,8 @@ export default function FunZone() {
       const [selectedRow, selectedCol] = selectedSquare;
       const selectedPiece = chessBoard[selectedRow][selectedCol];
       
-      // Try to move
-      if (isWhitePiece(selectedPiece) && !isWhitePiece(piece)) {
+      // Try to move with rules
+      if (isWhitePiece(selectedPiece) && isValidMove(chessBoard, selectedRow, selectedCol, row, col)) {
         const newBoard = chessBoard.map(r => [...r]);
         newBoard[row][col] = selectedPiece;
         newBoard[selectedRow][selectedCol] = '';
@@ -247,17 +335,19 @@ export default function FunZone() {
         setSelectedSquare(null);
         setChessMessage('Computer is thinking...');
         
-        // Computer's turn (simple random move)
+        // Computer's turn with rules
         setTimeout(() => {
           makeComputerChessMove(newBoard);
         }, 500);
       } else {
         setSelectedSquare(null);
+        setChessMessage('Invalid move! Try again.');
       }
     } else {
       // Select a white piece
       if (isWhitePiece(piece)) {
         setSelectedSquare([row, col]);
+        setChessMessage('Select where to move');
       }
     }
   };
@@ -272,29 +362,28 @@ export default function FunZone() {
       });
     });
     
-    if (blackPieces.length > 0) {
-      const [fromRow, fromCol] = blackPieces[Math.floor(Math.random() * blackPieces.length)];
-      const possibleMoves: [number, number][] = [];
-      
-      // Find empty squares or white pieces to capture
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-          if (board[i][j] === '' || isWhitePiece(board[i][j])) {
-            possibleMoves.push([i, j]);
+    // Find all valid moves for black pieces
+    const validMoves: [[number, number], [number, number]][] = [];
+    blackPieces.forEach(([fromRow, fromCol]) => {
+      for (let toRow = 0; toRow < 8; toRow++) {
+        for (let toCol = 0; toCol < 8; toCol++) {
+          if (isValidMove(board, fromRow, fromCol, toRow, toCol)) {
+            validMoves.push([[fromRow, fromCol], [toRow, toCol]]);
           }
         }
       }
-      
-      if (possibleMoves.length > 0) {
-        const [toRow, toCol] = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        const newBoard = board.map(r => [...r]);
-        newBoard[toRow][toCol] = board[fromRow][fromCol];
-        newBoard[fromRow][fromCol] = '';
-        setChessBoard(newBoard);
-      }
-    }
+    });
     
-    setChessMessage('Your turn! (White pieces)');
+    if (validMoves.length > 0) {
+      const [[fromRow, fromCol], [toRow, toCol]] = validMoves[Math.floor(Math.random() * validMoves.length)];
+      const newBoard = board.map(r => [...r]);
+      newBoard[toRow][toCol] = board[fromRow][fromCol];
+      newBoard[fromRow][fromCol] = '';
+      setChessBoard(newBoard);
+      setChessMessage('Your turn! (White pieces)');
+    } else {
+      setChessMessage('Computer has no valid moves!');
+    }
   };
 
   const resetChess = () => {
@@ -361,6 +450,80 @@ export default function FunZone() {
                 <span className="text-gray-900 dark:text-white font-semibold">
                   Thanks for stopping by!
                 </span>
+              </div>
+            </div>
+
+            {/* Rock-Paper-Scissors Game - Inside same column */}
+            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-center mb-4">
+                <FaGamepad className="text-4xl text-orange-600 mr-3" />
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Rock-Paper-Scissors
+                  </h4>
+                </div>
+              </div>
+
+              {/* RPS Score */}
+              <div className="flex justify-around mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {rpsPlayerScore}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">You</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">
+                    {rpsComputerScore}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Computer</div>
+                </div>
+              </div>
+
+              {/* RPS Choices */}
+              <div className="flex justify-center gap-3 mb-4">
+                {['🪨 Rock', '📄 Paper', '✂️ Scissors'].map((choice) => (
+                  <motion.button
+                    key={choice}
+                    onClick={() => playRPS(choice)}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-16 h-16 flex items-center justify-center text-3xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg hover:shadow-lg transition-all duration-300"
+                  >
+                    {choice.split(' ')[0]}
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* RPS Result */}
+              <div className="text-center min-h-[100px]">
+                {rpsResult && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="space-y-2"
+                  >
+                    <div className="flex justify-around items-center text-3xl">
+                      <div>{rpsPlayerChoice?.split(' ')[0]}</div>
+                      <div className="text-sm">VS</div>
+                      <div>{rpsComputerChoice?.split(' ')[0]}</div>
+                    </div>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                      {rpsResult}
+                    </p>
+                    <button
+                      onClick={resetRPS}
+                      className="px-4 py-1 bg-gradient-to-r from-orange-600 to-red-600 text-white text-sm rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+                    >
+                      Play Again
+                    </button>
+                  </motion.div>
+                )}
+                {!rpsResult && (
+                  <p className="text-gray-600 dark:text-gray-400 text-sm pt-4">
+                    Choose your move!
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>
@@ -485,94 +648,6 @@ export default function FunZone() {
               >
                 {winner ? 'Play Again' : 'Reset Game'}
               </button>
-            </div>
-          </motion.div>
-
-          {/* Rock-Paper-Scissors Game */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl"
-          >
-            <div className="flex items-center justify-center mb-6">
-              <FaGamepad className="text-5xl text-orange-600 mr-4" />
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Rock-Paper-Scissors
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Classic game!
-                </p>
-              </div>
-            </div>
-
-            {/* Score */}
-            <div className="flex justify-around mb-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600">
-                  {rpsPlayerScore}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">You</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-red-600">
-                  {rpsComputerScore}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Computer</div>
-              </div>
-            </div>
-
-            {/* Game Choices */}
-            <div className="flex justify-center gap-4 mb-6">
-              {['🪨 Rock', '📄 Paper', '✂️ Scissors'].map((choice) => (
-                <motion.button
-                  key={choice}
-                  onClick={() => playRPS(choice)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-20 h-20 flex items-center justify-center text-4xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-xl hover:shadow-lg transition-all duration-300"
-                >
-                  {choice.split(' ')[0]}
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Game Result */}
-            <div className="text-center min-h-[120px]">
-              {rpsResult && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <div className="flex justify-around items-center">
-                    <div className="text-center">
-                      <div className="text-5xl mb-2">{rpsPlayerChoice?.split(' ')[0]}</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">You</div>
-                    </div>
-                    <div className="text-2xl">VS</div>
-                    <div className="text-center">
-                      <div className="text-5xl mb-2">{rpsComputerChoice?.split(' ')[0]}</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">Computer</div>
-                    </div>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">
-                    {rpsResult}
-                  </p>
-                  <button
-                    onClick={resetRPS}
-                    className="px-6 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
-                  >
-                    Play Again
-                  </button>
-                </motion.div>
-              )}
-              {!rpsResult && (
-                <p className="text-gray-600 dark:text-gray-400 pt-8">
-                  Choose your move!
-                </p>
-              )}
             </div>
           </motion.div>
 
