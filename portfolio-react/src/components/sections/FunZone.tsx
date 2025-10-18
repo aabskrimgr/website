@@ -48,8 +48,26 @@ export default function FunZone() {
   useEffect(() => {
     const fetchVisitorCount = async () => {
       try {
-        // Using CountAPI - a free visitor counter service
-        const response = await fetch('https://api.countapi.xyz/hit/aabiskarregmi.com.np/visits');
+        // Check if this visitor has been counted before
+        const hasVisited = localStorage.getItem('portfolioHasVisited');
+        const visitorId = localStorage.getItem('portfolioVisitorId');
+        
+        // Generate unique visitor ID if not exists
+        if (!visitorId) {
+          const newVisitorId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          localStorage.setItem('portfolioVisitorId', newVisitorId);
+        }
+        
+        let apiUrl = 'https://api.countapi.xyz/get/aabiskarregmi.com.np/visits';
+        
+        // If new visitor, increment the count
+        if (!hasVisited) {
+          apiUrl = 'https://api.countapi.xyz/hit/aabiskarregmi.com.np/visits';
+          localStorage.setItem('portfolioHasVisited', 'true');
+          localStorage.setItem('portfolioFirstVisit', new Date().toISOString());
+        }
+        
+        const response = await fetch(apiUrl);
         const data = await response.json();
         
         if (data.value) {
@@ -66,22 +84,33 @@ export default function FunZone() {
               setVisitorCount(current);
             }
           }, 20);
-
-          return () => clearInterval(timer);
         }
       } catch (error) {
         console.error('Error fetching visitor count:', error);
-        // Fallback to localStorage starting from 0
+        // Fallback to localStorage
         const stored = localStorage.getItem('portfolioVisitorCount');
         const count = stored ? parseInt(stored) : 0;
-        const newCount = count + 1;
-        localStorage.setItem('portfolioVisitorCount', newCount.toString());
-        setVisitorCount(newCount);
+        setVisitorCount(count);
       }
     };
 
     fetchVisitorCount();
-  }, []);
+
+    // Poll for updates every 30 seconds to show live count
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch('https://api.countapi.xyz/get/aabiskarregmi.com.np/visits');
+        const data = await response.json();
+        if (data.value && data.value !== visitorCount) {
+          setVisitorCount(data.value);
+        }
+      } catch (error) {
+        console.error('Error polling visitor count:', error);
+      }
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [visitorCount]);
 
   // Tic-Tac-Toe logic
   const calculateWinner = (squares: (string | null)[]) => {
