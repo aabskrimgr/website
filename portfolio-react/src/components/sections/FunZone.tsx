@@ -23,6 +23,21 @@ export default function FunZone() {
   const [rpsPlayerScore, setRpsPlayerScore] = useState(0);
   const [rpsComputerScore, setRpsComputerScore] = useState(0);
 
+  // Simple Chess state (8x8 board)
+  const initialChessBoard = [
+    ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+    ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+    ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'],
+  ];
+  const [chessBoard, setChessBoard] = useState(initialChessBoard);
+  const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null);
+  const [chessMessage, setChessMessage] = useState<string>('Your turn! (White pieces)');
+
   // Initialize visitor count with real API
   useEffect(() => {
     const fetchVisitorCount = async () => {
@@ -210,6 +225,82 @@ export default function FunZone() {
     setRpsPlayerChoice(null);
     setRpsComputerChoice(null);
     setRpsResult(null);
+  };
+
+  // Simple Chess logic
+  const isWhitePiece = (piece: string) => ['♙', '♖', '♘', '♗', '♕', '♔'].includes(piece);
+  const isBlackPiece = (piece: string) => ['♟', '♜', '♞', '♝', '♛', '♚'].includes(piece);
+
+  const handleChessSquareClick = (row: number, col: number) => {
+    const piece = chessBoard[row][col];
+    
+    if (selectedSquare) {
+      const [selectedRow, selectedCol] = selectedSquare;
+      const selectedPiece = chessBoard[selectedRow][selectedCol];
+      
+      // Try to move
+      if (isWhitePiece(selectedPiece) && !isWhitePiece(piece)) {
+        const newBoard = chessBoard.map(r => [...r]);
+        newBoard[row][col] = selectedPiece;
+        newBoard[selectedRow][selectedCol] = '';
+        setChessBoard(newBoard);
+        setSelectedSquare(null);
+        setChessMessage('Computer is thinking...');
+        
+        // Computer's turn (simple random move)
+        setTimeout(() => {
+          makeComputerChessMove(newBoard);
+        }, 500);
+      } else {
+        setSelectedSquare(null);
+      }
+    } else {
+      // Select a white piece
+      if (isWhitePiece(piece)) {
+        setSelectedSquare([row, col]);
+      }
+    }
+  };
+
+  const makeComputerChessMove = (board: string[][]) => {
+    const blackPieces: [number, number][] = [];
+    board.forEach((row, i) => {
+      row.forEach((piece, j) => {
+        if (isBlackPiece(piece)) {
+          blackPieces.push([i, j]);
+        }
+      });
+    });
+    
+    if (blackPieces.length > 0) {
+      const [fromRow, fromCol] = blackPieces[Math.floor(Math.random() * blackPieces.length)];
+      const possibleMoves: [number, number][] = [];
+      
+      // Find empty squares or white pieces to capture
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          if (board[i][j] === '' || isWhitePiece(board[i][j])) {
+            possibleMoves.push([i, j]);
+          }
+        }
+      }
+      
+      if (possibleMoves.length > 0) {
+        const [toRow, toCol] = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        const newBoard = board.map(r => [...r]);
+        newBoard[toRow][toCol] = board[fromRow][fromCol];
+        newBoard[fromRow][fromCol] = '';
+        setChessBoard(newBoard);
+      }
+    }
+    
+    setChessMessage('Your turn! (White pieces)');
+  };
+
+  const resetChess = () => {
+    setChessBoard(initialChessBoard);
+    setSelectedSquare(null);
+    setChessMessage('Your turn! (White pieces)');
   };
 
   return (
@@ -482,6 +573,75 @@ export default function FunZone() {
                   Choose your move!
                 </p>
               )}
+            </div>
+          </motion.div>
+
+          {/* Mini Chess Game */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl"
+          >
+            <div className="flex items-center justify-center mb-6">
+              <div className="text-5xl mr-4">♟️</div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Mini Chess
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Play against computer!
+                </p>
+              </div>
+            </div>
+
+            {/* Message */}
+            <div className="text-center mb-4">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {chessMessage}
+              </p>
+            </div>
+
+            {/* Chess Board */}
+            <div className="grid grid-cols-8 gap-0 mb-4 border-4 border-gray-800 dark:border-gray-600 rounded-lg overflow-hidden">
+              {chessBoard.map((row, i) =>
+                row.map((piece, j) => {
+                  const isLight = (i + j) % 2 === 0;
+                  const isSelected = selectedSquare?.[0] === i && selectedSquare?.[1] === j;
+                  return (
+                    <motion.button
+                      key={`${i}-${j}`}
+                      onClick={() => handleChessSquareClick(i, j)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`aspect-square flex items-center justify-center text-2xl ${
+                        isLight
+                          ? 'bg-amber-200 dark:bg-amber-700'
+                          : 'bg-amber-600 dark:bg-amber-900'
+                      } ${
+                        isSelected
+                          ? 'ring-4 ring-green-500'
+                          : ''
+                      } hover:brightness-110 transition-all`}
+                    >
+                      {piece}
+                    </motion.button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Instructions & Reset */}
+            <div className="text-center space-y-3">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Click a white piece, then click where to move it
+              </p>
+              <button
+                onClick={resetChess}
+                className="px-6 py-2 bg-gradient-to-r from-amber-600 to-amber-800 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
+              >
+                Reset Game
+              </button>
             </div>
           </motion.div>
         </div>
