@@ -559,18 +559,38 @@ export default function FunZone() {
     
     // Find all valid moves for black pieces
     const validMoves: [[number, number], [number, number]][] = [];
+    const capturingMoves: [[number, number], [number, number]][] = [];
+    
     blackPieces.forEach(([fromRow, fromCol]) => {
       for (let toRow = 0; toRow < 8; toRow++) {
         for (let toCol = 0; toCol < 8; toCol++) {
           if (isValidMove(board, fromRow, fromCol, toRow, toCol)) {
-            validMoves.push([[fromRow, fromCol], [toRow, toCol]]);
+            const move: [[number, number], [number, number]] = [[fromRow, fromCol], [toRow, toCol]];
+            validMoves.push(move);
+            
+            // Check if this move captures a piece
+            if (board[toRow][toCol] && isWhitePiece(board[toRow][toCol])) {
+              capturingMoves.push(move);
+            }
+            // Check for en passant capture
+            const movingPiece = board[fromRow][fromCol];
+            if (movingPiece === '♟' && Math.abs(toCol - fromCol) === 1 && !board[toRow][toCol]) {
+              if (lastMove) {
+                const [[, ], [lastToRow, lastToCol]] = lastMove;
+                if (board[lastToRow][lastToCol] === '♙' && lastToCol === toCol && lastToRow === toRow - 1) {
+                  capturingMoves.push(move);
+                }
+              }
+            }
           }
         }
       }
     });
     
     if (validMoves.length > 0) {
-      const [[fromRow, fromCol], [toRow, toCol]] = validMoves[Math.floor(Math.random() * validMoves.length)];
+      // Prefer capturing moves if available
+      const movesToConsider = capturingMoves.length > 0 ? capturingMoves : validMoves;
+      const [[fromRow, fromCol], [toRow, toCol]] = movesToConsider[Math.floor(Math.random() * movesToConsider.length)];
       const newBoard = board.map(r => [...r]);
       const movingPiece = board[fromRow][fromCol];
       const capturedPiece = board[toRow][toCol];
