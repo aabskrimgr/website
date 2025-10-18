@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaBars, FaTimes, FaMoon, FaSun, FaGamepad } from 'react-icons/fa';
 
@@ -165,10 +166,10 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Backdrop + Mobile Menu */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <>
+        {/* Backdrop + Mobile Menu via Portal to avoid transform stacking issues on Android/iOS */}
+        {isMobileMenuOpen && createPortal(
+          (
+            <AnimatePresence>
               {/* Backdrop */}
               <motion.div
                 key="backdrop"
@@ -176,7 +177,7 @@ export default function Navbar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black/60 md:hidden z-40"
+                className="fixed inset-0 bg-black/60 md:hidden z-[1000]"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
@@ -187,7 +188,7 @@ export default function Navbar() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.25 }}
-                className="fixed inset-x-0 top-[72px] bottom-0 md:hidden z-50 overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
+                className="fixed inset-x-0 top-[72px] bottom-0 md:hidden z-[1001] overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
                 style={{ backgroundColor: isDarkMode ? 'rgb(17, 24, 39)' : 'rgb(255,255,255)' }}
               >
                 <div className="flex flex-col gap-4 py-4 px-6">
@@ -201,7 +202,7 @@ export default function Navbar() {
                       {link.name}
                     </a>
                   ))}
-                  
+
                   {/* Fun Zone Link for Mobile */}
                   <button
                     onClick={scrollToFunZone}
@@ -212,9 +213,10 @@ export default function Navbar() {
                   </button>
                 </div>
               </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+            </AnimatePresence>
+          ),
+          document.body
+        )}
       </div>
     </motion.nav>
   );
