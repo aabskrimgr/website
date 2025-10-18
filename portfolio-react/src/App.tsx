@@ -6,6 +6,7 @@ import Resume from './components/sections/Resume';
 import Portfolio from './components/sections/Portfolio';
 import Contact from './components/sections/Contact';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   useEffect(() => {
@@ -24,6 +25,7 @@ function App() {
         <Contact />
       </main>
       <Footer />
+      <ScrollToTop />
     </div>
   );
 }
