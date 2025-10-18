@@ -15,28 +15,43 @@ export default function FunZone() {
   const [playerScore, setPlayerScore] = useState(0);
   const [computerScore, setComputerScore] = useState(0);
 
-  // Initialize visitor count
+  // Initialize visitor count with real API
   useEffect(() => {
-    // Get visitor count from localStorage
-    const stored = localStorage.getItem('portfolioVisitorCount');
-    const count = stored ? parseInt(stored) : 1000; // Start at 1000 for initial impression
-    const newCount = count + 1;
-    localStorage.setItem('portfolioVisitorCount', newCount.toString());
-    
-    // Animate the counter
-    let current = count;
-    const increment = Math.ceil((newCount - count) / 20);
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= newCount) {
-        setVisitorCount(newCount);
-        clearInterval(timer);
-      } else {
-        setVisitorCount(current);
-      }
-    }, 50);
+    const fetchVisitorCount = async () => {
+      try {
+        // Using CountAPI - a free visitor counter service
+        const response = await fetch('https://api.countapi.xyz/hit/aabiskarregmi.com.np/visits');
+        const data = await response.json();
+        
+        if (data.value) {
+          // Animate the counter
+          let current = 0;
+          const target = data.value;
+          const increment = Math.ceil(target / 50);
+          const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+              setVisitorCount(target);
+              clearInterval(timer);
+            } else {
+              setVisitorCount(current);
+            }
+          }, 20);
 
-    return () => clearInterval(timer);
+          return () => clearInterval(timer);
+        }
+      } catch (error) {
+        console.error('Error fetching visitor count:', error);
+        // Fallback to localStorage
+        const stored = localStorage.getItem('portfolioVisitorCount');
+        const count = stored ? parseInt(stored) : 1000;
+        const newCount = count + 1;
+        localStorage.setItem('portfolioVisitorCount', newCount.toString());
+        setVisitorCount(newCount);
+      }
+    };
+
+    fetchVisitorCount();
   }, []);
 
   // Tic-Tac-Toe logic
