@@ -1,7 +1,6 @@
 [build]
-  base = "portfolio-react"
-  command = "npm install --legacy-peer-deps && npm run build"
-  publish = "dist"
+  command = "cd portfolio-react && npm install --legacy-peer-deps && npm run build"
+  publish = "portfolio-react/dist"
 
 [[redirects]]
   from = "/*"
