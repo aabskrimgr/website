@@ -15,6 +15,13 @@ export default function FunZone() {
   const [playerScore, setPlayerScore] = useState(0);
   const [computerScore, setComputerScore] = useState(0);
   const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
+  
+  // Rock-Paper-Scissors state
+  const [rpsPlayerChoice, setRpsPlayerChoice] = useState<string | null>(null);
+  const [rpsComputerChoice, setRpsComputerChoice] = useState<string | null>(null);
+  const [rpsResult, setRpsResult] = useState<string | null>(null);
+  const [rpsPlayerScore, setRpsPlayerScore] = useState(0);
+  const [rpsComputerScore, setRpsComputerScore] = useState(0);
 
   // Initialize visitor count with real API
   useEffect(() => {
@@ -43,9 +50,9 @@ export default function FunZone() {
         }
       } catch (error) {
         console.error('Error fetching visitor count:', error);
-        // Fallback to localStorage
+        // Fallback to localStorage starting from 0
         const stored = localStorage.getItem('portfolioVisitorCount');
-        const count = stored ? parseInt(stored) : 1000;
+        const count = stored ? parseInt(stored) : 0;
         const newCount = count + 1;
         localStorage.setItem('portfolioVisitorCount', newCount.toString());
         setVisitorCount(newCount);
@@ -172,6 +179,39 @@ export default function FunZone() {
     setWinner(null);
   };
 
+  // Rock-Paper-Scissors logic
+  const playRPS = (playerChoice: string) => {
+    const choices = ['🪨 Rock', '📄 Paper', '✂️ Scissors'];
+    const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+    
+    setRpsPlayerChoice(playerChoice);
+    setRpsComputerChoice(computerChoice);
+    
+    // Determine winner
+    const player = playerChoice.split(' ')[1];
+    const computer = computerChoice.split(' ')[1];
+    
+    if (player === computer) {
+      setRpsResult("It's a Tie! 🤝");
+    } else if (
+      (player === 'Rock' && computer === 'Scissors') ||
+      (player === 'Paper' && computer === 'Rock') ||
+      (player === 'Scissors' && computer === 'Paper')
+    ) {
+      setRpsResult('You Win! 🎉');
+      setRpsPlayerScore(prev => prev + 1);
+    } else {
+      setRpsResult('Computer Wins! 🤖');
+      setRpsComputerScore(prev => prev + 1);
+    }
+  };
+
+  const resetRPS = () => {
+    setRpsPlayerChoice(null);
+    setRpsComputerChoice(null);
+    setRpsResult(null);
+  };
+
   return (
     <section className="section-padding bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container-custom">
@@ -190,7 +230,7 @@ export default function FunZone() {
           </p>
         </motion.div>
 
-        <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div ref={ref} className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* Visitor Counter */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -354,6 +394,94 @@ export default function FunZone() {
               >
                 {winner ? 'Play Again' : 'Reset Game'}
               </button>
+            </div>
+          </motion.div>
+
+          {/* Rock-Paper-Scissors Game */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl"
+          >
+            <div className="flex items-center justify-center mb-6">
+              <FaGamepad className="text-5xl text-orange-600 mr-4" />
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Rock-Paper-Scissors
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Classic game!
+                </p>
+              </div>
+            </div>
+
+            {/* Score */}
+            <div className="flex justify-around mb-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-orange-600">
+                  {rpsPlayerScore}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">You</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-600">
+                  {rpsComputerScore}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Computer</div>
+              </div>
+            </div>
+
+            {/* Game Choices */}
+            <div className="flex justify-center gap-4 mb-6">
+              {['🪨 Rock', '📄 Paper', '✂️ Scissors'].map((choice) => (
+                <motion.button
+                  key={choice}
+                  onClick={() => playRPS(choice)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-20 h-20 flex items-center justify-center text-4xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-xl hover:shadow-lg transition-all duration-300"
+                >
+                  {choice.split(' ')[0]}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Game Result */}
+            <div className="text-center min-h-[120px]">
+              {rpsResult && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="space-y-4"
+                >
+                  <div className="flex justify-around items-center">
+                    <div className="text-center">
+                      <div className="text-5xl mb-2">{rpsPlayerChoice?.split(' ')[0]}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">You</div>
+                    </div>
+                    <div className="text-2xl">VS</div>
+                    <div className="text-center">
+                      <div className="text-5xl mb-2">{rpsComputerChoice?.split(' ')[0]}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">Computer</div>
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    {rpsResult}
+                  </p>
+                  <button
+                    onClick={resetRPS}
+                    className="px-6 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  >
+                    Play Again
+                  </button>
+                </motion.div>
+              )}
+              {!rpsResult && (
+                <p className="text-gray-600 dark:text-gray-400 pt-8">
+                  Choose your move!
+                </p>
+              )}
             </div>
           </motion.div>
         </div>
