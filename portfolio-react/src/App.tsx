@@ -5,6 +5,7 @@ import About from './components/sections/About';
 import Resume from './components/sections/Resume';
 import Portfolio from './components/sections/Portfolio';
 import Contact from './components/sections/Contact';
+import FunZone from './components/sections/FunZone';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -23,6 +24,7 @@ function App() {
         <Resume />
         <Portfolio />
         <Contact />
+        <FunZone />
       </main>
       <Footer />
       <ScrollToTop />
