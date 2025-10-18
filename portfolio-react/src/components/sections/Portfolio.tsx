@@ -18,7 +18,7 @@ export default function Portfolio() {
       image: '/projects/micromouse.jpg',
       description: 'Award-winning autonomous maze-solving robot using PID control, QTR-8A sensors, and path optimization algorithms. Features both left-hand and right-hand line-following strategies.',
       tags: ['Arduino', 'PID Control', 'Pathfinding', 'C++'],
-      link: 'https://github.com/aabskrimgr/micromouse',
+      link: 'https://github.com/aabskrimgr/Micromouse',
     },
     {
       id: 2,
@@ -27,7 +27,7 @@ export default function Portfolio() {
       image: '/projects/line-follower.png',
       description: 'High-speed line following robot with advanced PID tuning and sensor calibration for optimal track performance.',
       tags: ['Arduino', 'QTR Sensors', 'Motor Control', 'Embedded Systems'],
-      link: 'https://github.com/aabskrimgr/line-follower',
+      link: 'https://github.com/aabskrimgr/Line-Follower',
     },
     {
       id: 3,
@@ -36,7 +36,7 @@ export default function Portfolio() {
       image: '/projects/rubiks-cube.png',
       description: 'Computer graphics project featuring a functional Rubik\'s cube simulation with solving algorithms and interactive 3D visualization.',
       tags: ['Computer Graphics', '3D Simulation', 'Algorithms', 'OpenGL'],
-      link: 'https://github.com/aabskrimgr/rubiks-cube',
+      link: 'https://github.com/aabskrimgr/rubiks-cube-solver',
     },
     {
       id: 4,
@@ -45,7 +45,7 @@ export default function Portfolio() {
       image: '/projects/home-automation.jpg',
       description: 'IoT-based smart home automation system with mobile app control, sensor integration, and real-time monitoring.',
       tags: ['IoT', 'ESP32', 'Mobile App', 'Smart Home'],
-      link: 'https://github.com/aabskrimgr/home-automation',
+      link: 'https://github.com/aabskrimgr/iot-home-automation',
     },
     {
       id: 5,
@@ -54,7 +54,7 @@ export default function Portfolio() {
       image: '/projects/volunteering-aakar.jpg',
       description: 'Taught students Robotics and Home Automation during the "Book Free Day" program in Ward 26, Pokhara Metropolitan City.',
       tags: ['Teaching', 'Robotics', 'Community Service', 'Education'],
-      link: '#',
+      link: 'https://www.facebook.com/aakarhelpinghand/',
     },
     {
       id: 6,
@@ -63,7 +63,7 @@ export default function Portfolio() {
       image: '/projects/photography.jpeg',
       description: 'Mobile photography collection featuring Nepal\'s beautiful landscapes',
       tags: ['Photography', 'Mobile Photography', 'Editing'],
-      link: '/index.html',
+      link: 'https://www.instagram.com/aabiskar_._regmi/',
     },
   ];
 
