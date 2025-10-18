@@ -89,14 +89,16 @@ export default function FunZone() {
   const handleClick = (index: number) => {
     if (board[index] || winner) return;
 
+    // Player's move
     const newBoard = [...board];
     newBoard[index] = 'X';
-    setBoard(newBoard);
+    setBoard([...newBoard]); // Force re-render with new array
 
-    const gameWinner = calculateWinner(newBoard);
-    if (gameWinner) {
-      setWinner(gameWinner);
-      setPlayerScore(playerScore + 1);
+    // Check for winner after player's move
+    const playerWinner = calculateWinner(newBoard);
+    if (playerWinner) {
+      setWinner(playerWinner);
+      setPlayerScore(prev => prev + 1);
       return;
     }
 
@@ -105,20 +107,21 @@ export default function FunZone() {
       return;
     }
 
-    // Computer's turn
+    // Computer's turn after 500ms delay
     setTimeout(() => {
       const computerMove = getComputerMove(newBoard);
       if (computerMove !== -1) {
-        newBoard[computerMove] = 'O';
-        setBoard(newBoard);
+        const updatedBoard = [...newBoard];
+        updatedBoard[computerMove] = 'O';
+        setBoard([...updatedBoard]); // Force re-render with new array
 
-        const gameWinner = calculateWinner(newBoard);
-        if (gameWinner) {
-          setWinner(gameWinner);
-          if (gameWinner === 'O') {
-            setComputerScore(computerScore + 1);
+        const computerWinner = calculateWinner(updatedBoard);
+        if (computerWinner) {
+          setWinner(computerWinner);
+          if (computerWinner === 'O') {
+            setComputerScore(prev => prev + 1);
           }
-        } else if (isBoardFull(newBoard)) {
+        } else if (isBoardFull(updatedBoard)) {
           setWinner('Draw');
         }
       }
@@ -230,10 +233,12 @@ export default function FunZone() {
             {/* Game Board */}
             <div className="grid grid-cols-3 gap-3 mb-6 max-w-xs mx-auto">
               {board.map((cell, index) => (
-                <button
+                <motion.button
                   key={index}
                   onClick={() => handleClick(index)}
                   disabled={!!winner || !!cell}
+                  whileHover={!winner && !cell ? { scale: 1.1 } : {}}
+                  whileTap={!winner && !cell ? { scale: 0.95 } : {}}
                   className={`aspect-square flex items-center justify-center text-4xl font-bold rounded-xl transition-all duration-300 ${
                     cell === 'X'
                       ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600'
@@ -241,11 +246,24 @@ export default function FunZone() {
                       ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600'
                       : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                   } ${
-                    !winner && !cell ? 'cursor-pointer hover:scale-105' : 'cursor-not-allowed'
+                    !winner && !cell ? 'cursor-pointer' : 'cursor-not-allowed'
                   }`}
                 >
-                  {cell}
-                </button>
+                  {cell && (
+                    <motion.span
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 260, 
+                        damping: 20 
+                      }}
+                      className={cell === 'X' ? 'animate-pulse-once' : ''}
+                    >
+                      {cell}
+                    </motion.span>
+                  )}
+                </motion.button>
               ))}
             </div>
 
