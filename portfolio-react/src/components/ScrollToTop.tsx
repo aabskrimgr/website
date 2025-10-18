@@ -29,10 +29,28 @@ export default function ScrollToTop() {
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    // Temporarily disable CSS smooth to avoid competing animations
+    const html = document.documentElement as HTMLElement & { style: any };
+    const prevScrollBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+
+    const startY = window.scrollY;
+    const duration = 500; // faster for mobile to reduce "vibration"
+    const startTime = performance.now();
+
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(t);
+      const nextY = Math.round(startY * (1 - eased));
+      window.scrollTo(0, nextY);
+      if (t < 1 && window.scrollY > 0) requestAnimationFrame(step);
+      else html.style.scrollBehavior = prevScrollBehavior || '';
+    };
+
+    requestAnimationFrame(step);
   };
 
   return (

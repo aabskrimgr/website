@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaBars, FaTimes, FaMoon, FaSun, FaGamepad } from 'react-icons/fa';
@@ -6,6 +6,8 @@ import { FaBars, FaTimes, FaMoon, FaSun, FaGamepad } from 'react-icons/fa';
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [navHeight, setNavHeight] = useState(72);
+  const navInnerRef = useRef<HTMLDivElement | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check localStorage or system preference
     const savedTheme = localStorage.getItem('theme');
@@ -34,6 +36,23 @@ export default function Navbar() {
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
+
+  // Measure navbar height to ensure the full-screen mobile panel pads correctly
+  useEffect(() => {
+    const measure = () => {
+      if (navInnerRef.current) {
+        setNavHeight(navInnerRef.current.offsetHeight || 72);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (navInnerRef.current) ro.observe(navInnerRef.current);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro.disconnect();
+    };
+  }, [isMobileMenuOpen]);
 
   // Lock body scroll when mobile menu is open (prevents background scroll and weird overlay artifacts)
   useEffect(() => {
@@ -94,7 +113,7 @@ export default function Navbar() {
       }`}
       style={isMobileMenuOpen ? { backgroundColor: 'rgb(17, 24, 39)' } : undefined}
     >
-      <div className="container-custom px-6 py-4">
+  <div ref={navInnerRef} className="container-custom px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <motion.a
@@ -177,19 +196,19 @@ export default function Navbar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black/60 md:hidden z-[1000]"
+                className="fixed inset-0 bg-black md:hidden z-[1000]"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
               {/* Full-screen slide-down panel */}
               <motion.div
                 key="mobile-menu"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="fixed inset-x-0 top-[72px] bottom-0 md:hidden z-[1001] overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
-                style={{ backgroundColor: isDarkMode ? 'rgb(17, 24, 39)' : 'rgb(255,255,255)' }}
+                className="fixed inset-0 md:hidden z-[1001] overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
+                style={{ backgroundColor: isDarkMode ? 'rgb(17, 24, 39)' : 'rgb(255,255,255)', paddingTop: navHeight }}
               >
                 <div className="flex flex-col gap-4 py-4 px-6">
                   {navLinks.map((link) => (
