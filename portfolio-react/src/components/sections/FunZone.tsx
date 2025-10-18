@@ -14,6 +14,7 @@ export default function FunZone() {
   const [winner, setWinner] = useState<string | null>(null);
   const [playerScore, setPlayerScore] = useState(0);
   const [computerScore, setComputerScore] = useState(0);
+  const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
 
   // Initialize visitor count with real API
   useEffect(() => {
@@ -82,7 +83,45 @@ export default function FunZone() {
     
     if (emptySquares.length === 0) return -1;
     
-    // Simple AI: random move
+    // Easy mode: random move
+    if (difficulty === 'easy') {
+      return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+    }
+    
+    // Hard mode: Smart AI
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+      [0, 4, 8], [2, 4, 6] // Diagonals
+    ];
+    
+    // 1. Try to win
+    for (const line of lines) {
+      const [a, b, c] = line;
+      if (squares[a] === 'O' && squares[b] === 'O' && !squares[c]) return c;
+      if (squares[a] === 'O' && squares[c] === 'O' && !squares[b]) return b;
+      if (squares[b] === 'O' && squares[c] === 'O' && !squares[a]) return a;
+    }
+    
+    // 2. Block player from winning
+    for (const line of lines) {
+      const [a, b, c] = line;
+      if (squares[a] === 'X' && squares[b] === 'X' && !squares[c]) return c;
+      if (squares[a] === 'X' && squares[c] === 'X' && !squares[b]) return b;
+      if (squares[b] === 'X' && squares[c] === 'X' && !squares[a]) return a;
+    }
+    
+    // 3. Take center if available
+    if (!squares[4]) return 4;
+    
+    // 4. Take a corner
+    const corners = [0, 2, 6, 8];
+    const availableCorners = corners.filter(i => !squares[i]);
+    if (availableCorners.length > 0) {
+      return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+    }
+    
+    // 5. Take any available space
     return emptySquares[Math.floor(Math.random() * emptySquares.length)];
   };
 
@@ -212,6 +251,30 @@ export default function FunZone() {
                   Challenge the computer!
                 </p>
               </div>
+            </div>
+
+            {/* Difficulty Selector */}
+            <div className="flex justify-center gap-3 mb-6">
+              <button
+                onClick={() => setDifficulty('easy')}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                  difficulty === 'easy'
+                    ? 'bg-green-500 text-white shadow-lg shadow-green-500/50'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                😊 Easy
+              </button>
+              <button
+                onClick={() => setDifficulty('hard')}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                  difficulty === 'hard'
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/50'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                🔥 Hard
+              </button>
             </div>
 
             {/* Score */}
