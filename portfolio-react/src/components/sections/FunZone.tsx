@@ -961,6 +961,9 @@ export default function FunZone() {
                   row.map((piece, j) => {
                     const isLight = (i + j) % 2 === 0;
                     const isSelected = selectedSquare?.[0] === i && selectedSquare?.[1] === j;
+                    const isPieceWhite = isWhitePiece(piece);
+                    const isPieceBlack = isBlackPiece(piece);
+                    
                     return (
                       <motion.button
                         key={`${i}-${j}`}
@@ -974,6 +977,12 @@ export default function FunZone() {
                         } ${
                           isSelected
                             ? 'ring-4 ring-green-500'
+                            : ''
+                        } ${
+                          isPieceWhite
+                            ? 'text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]'
+                            : isPieceBlack
+                            ? 'text-gray-900 drop-shadow-[0_2px_2px_rgba(255,255,255,0.5)]'
                             : ''
                         } hover:brightness-110 transition-all`}
                       >
