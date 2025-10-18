@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aabiskarregmi.com.np/sitemap.xml
