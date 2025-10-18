@@ -654,7 +654,7 @@ export default function FunZone() {
   };
 
   return (
-    <section className="section-padding bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <section id="fun-zone" className="section-padding bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

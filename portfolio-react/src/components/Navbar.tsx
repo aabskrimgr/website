@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBars, FaTimes, FaMoon, FaSun } from 'react-icons/fa';
+import { FaBars, FaTimes, FaMoon, FaSun, FaGamepad } from 'react-icons/fa';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -42,6 +42,15 @@ export default function Navbar() {
     { name: 'Contact', href: '#contact' },
   ];
 
+  const scrollToFunZone = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const funZoneSection = document.getElementById('fun-zone');
+    if (funZoneSection) {
+      funZoneSection.scrollIntoView({ behavior: 'smooth' });
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
     <motion.nav
       initial={{ y: -100 }}
@@ -77,6 +86,21 @@ export default function Navbar() {
                 {link.name}
               </motion.a>
             ))}
+            
+            {/* Fun Zone Game Icon */}
+            <motion.button
+              onClick={scrollToFunZone}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: navLinks.length * 0.1 }}
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300"
+              aria-label="Jump to Fun Zone"
+              title="Fun Zone - Games!"
+            >
+              <FaGamepad size={20} />
+            </motion.button>
             
             {/* Theme Toggle */}
             <button
@@ -129,6 +153,15 @@ export default function Navbar() {
                     {link.name}
                   </a>
                 ))}
+                
+                {/* Fun Zone Link for Mobile */}
+                <button
+                  onClick={scrollToFunZone}
+                  className="flex items-center gap-3 text-left text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium py-3 px-4 rounded-lg"
+                >
+                  <FaGamepad size={20} />
+                  <span>Fun Zone - Games!</span>
+                </button>
               </div>
             </motion.div>
           )}
