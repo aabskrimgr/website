@@ -43,6 +43,7 @@ export default function FunZone() {
   const [whiteScore, setWhiteScore] = useState(0);
   const [blackScore, setBlackScore] = useState(0);
   const [currentTurn, setCurrentTurn] = useState<'white' | 'black'>('white');
+  const [validMoves, setValidMoves] = useState<[number, number][]>([]);
   // Castling rights tracking
   const [castlingRights, setCastlingRights] = useState({
     whiteKingMoved: false,
@@ -319,8 +320,31 @@ export default function FunZone() {
 
   const wouldBeInCheck = (board: string[][], fromRow: number, fromCol: number, toRow: number, toCol: number, isWhite: boolean): boolean => {
     const newBoard = board.map(r => [...r]);
-    newBoard[toRow][toCol] = board[fromRow][fromCol];
-    newBoard[fromRow][fromCol] = '';
+    const piece = board[fromRow][fromCol];
+    
+    // Handle castling moves
+    const isCastling = (piece === '♔' || piece === '♚') && Math.abs(toCol - fromCol) === 2;
+    if (isCastling) {
+      // Move king
+      newBoard[toRow][toCol] = piece;
+      newBoard[fromRow][fromCol] = '';
+      
+      // Move rook for castling
+      if (toCol === 6) {
+        // Kingside
+        newBoard[fromRow][5] = newBoard[fromRow][7];
+        newBoard[fromRow][7] = '';
+      } else if (toCol === 2) {
+        // Queenside
+        newBoard[fromRow][3] = newBoard[fromRow][0];
+        newBoard[fromRow][0] = '';
+      }
+    } else {
+      // Normal move
+      newBoard[toRow][toCol] = board[fromRow][fromCol];
+      newBoard[fromRow][fromCol] = '';
+    }
+    
     return isKingInCheck(newBoard, isWhite);
   };
 
@@ -670,23 +694,51 @@ export default function FunZone() {
         }
       } else {
         setSelectedSquare(null);
+        setValidMoves([]);
         setChessMessage('Invalid move! Try again.');
       }
     } else {
-      // Select a piece
+      // Select a piece and calculate valid moves
+      const moves: [number, number][] = [];
+      
       if (chessMode === '1-player') {
         // Only white pieces in 1-player mode
         if (isWhitePiece(piece)) {
+          // Calculate all valid moves for this piece
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              if (isValidMove(chessBoard, row, col, r, c)) {
+                moves.push([r, c]);
+              }
+            }
+          }
           setSelectedSquare([row, col]);
+          setValidMoves(moves);
           setChessMessage('Select where to move');
         }
       } else {
         // 2-player mode - select based on turn
         if (currentTurn === 'white' && isWhitePiece(piece)) {
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              if (isValidMove(chessBoard, row, col, r, c)) {
+                moves.push([r, c]);
+              }
+            }
+          }
           setSelectedSquare([row, col]);
+          setValidMoves(moves);
           setChessMessage('White: Select where to move');
         } else if (currentTurn === 'black' && isBlackPiece(piece)) {
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              if (isValidMove(chessBoard, row, col, r, c)) {
+                moves.push([r, c]);
+              }
+            }
+          }
           setSelectedSquare([row, col]);
+          setValidMoves(moves);
           setChessMessage('Black: Select where to move');
         }
       }
@@ -787,6 +839,7 @@ export default function FunZone() {
   const resetChess = () => {
     setChessBoard(initialChessBoard);
     setSelectedSquare(null);
+    setValidMoves([]);
     setLastMove(null);
     setGameOver(false);
     setWhiteScore(0);
@@ -1117,6 +1170,7 @@ export default function FunZone() {
                     const isSelected = selectedSquare?.[0] === i && selectedSquare?.[1] === j;
                     const isPieceWhite = isWhitePiece(piece);
                     const isPieceBlack = isBlackPiece(piece);
+                    const isValidMove = validMoves.some(([r, c]) => r === i && c === j);
                     
                     return (
                       <motion.button
@@ -1124,7 +1178,7 @@ export default function FunZone() {
                         onClick={() => handleChessSquareClick(i, j)}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`aspect-square flex items-center justify-center text-2xl ${
+                        className={`aspect-square flex items-center justify-center text-2xl relative ${
                           isLight
                             ? 'bg-amber-200 dark:bg-amber-700'
                             : 'bg-amber-600 dark:bg-amber-900'
@@ -1141,6 +1195,14 @@ export default function FunZone() {
                         } hover:brightness-110 transition-all`}
                       >
                         {piece}
+                        {isValidMove && !piece && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-3 h-3 rounded-full bg-green-500/60"></div>
+                          </div>
+                        )}
+                        {isValidMove && piece && (
+                          <div className="absolute inset-0 rounded-md ring-2 ring-green-500/70 ring-inset pointer-events-none"></div>
+                        )}
                       </motion.button>
                     );
                   })
