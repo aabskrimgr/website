@@ -43,6 +43,15 @@ export default function FunZone() {
   const [whiteScore, setWhiteScore] = useState(0);
   const [blackScore, setBlackScore] = useState(0);
   const [currentTurn, setCurrentTurn] = useState<'white' | 'black'>('white');
+  // Castling rights tracking
+  const [castlingRights, setCastlingRights] = useState({
+    whiteKingMoved: false,
+    whiteKingsideRookMoved: false,
+    whiteQueensideRookMoved: false,
+    blackKingMoved: false,
+    blackKingsideRookMoved: false,
+    blackQueensideRookMoved: false,
+  });
 
   // Initialize visitor count with real API
   useEffect(() => {
@@ -411,7 +420,67 @@ export default function FunZone() {
 
     // King moves
     if (piece === '♔' || piece === '♚') {
+      // Normal king move (one square in any direction)
       if (rowDiff <= 1 && colDiff <= 1) return true;
+      
+      // Castling logic
+      const isWhiteKing = piece === '♔';
+      if (colDiff === 2 && rowDiff === 0) {
+        // Kingside castling (short castling - O-O)
+        if (toCol === 6) {
+          if (isWhiteKing) {
+            // White kingside: king on e1 (7,4) to g1 (7,6), rook on h1 (7,7)
+            if (fromRow === 7 && fromCol === 4 && !castlingRights.whiteKingMoved && !castlingRights.whiteKingsideRookMoved) {
+              // Check squares between king and rook are empty
+              if (board[7][5] === '' && board[7][6] === '') {
+                // Check king is not in check, doesn't pass through check, and doesn't end in check
+                if (!isSquareUnderAttack(board, 7, 4, false) && 
+                    !isSquareUnderAttack(board, 7, 5, false) && 
+                    !isSquareUnderAttack(board, 7, 6, false)) {
+                  return true;
+                }
+              }
+            }
+          } else {
+            // Black kingside: king on e8 (0,4) to g8 (0,6), rook on h8 (0,7)
+            if (fromRow === 0 && fromCol === 4 && !castlingRights.blackKingMoved && !castlingRights.blackKingsideRookMoved) {
+              if (board[0][5] === '' && board[0][6] === '') {
+                if (!isSquareUnderAttack(board, 0, 4, true) && 
+                    !isSquareUnderAttack(board, 0, 5, true) && 
+                    !isSquareUnderAttack(board, 0, 6, true)) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+        // Queenside castling (long castling - O-O-O)
+        if (toCol === 2) {
+          if (isWhiteKing) {
+            // White queenside: king on e1 (7,4) to c1 (7,2), rook on a1 (7,0)
+            if (fromRow === 7 && fromCol === 4 && !castlingRights.whiteKingMoved && !castlingRights.whiteQueensideRookMoved) {
+              if (board[7][1] === '' && board[7][2] === '' && board[7][3] === '') {
+                if (!isSquareUnderAttack(board, 7, 4, false) && 
+                    !isSquareUnderAttack(board, 7, 3, false) && 
+                    !isSquareUnderAttack(board, 7, 2, false)) {
+                  return true;
+                }
+              }
+            }
+          } else {
+            // Black queenside: king on e8 (0,4) to c8 (0,2), rook on a8 (0,0)
+            if (fromRow === 0 && fromCol === 4 && !castlingRights.blackKingMoved && !castlingRights.blackQueensideRookMoved) {
+              if (board[0][1] === '' && board[0][2] === '' && board[0][3] === '') {
+                if (!isSquareUnderAttack(board, 0, 4, true) && 
+                    !isSquareUnderAttack(board, 0, 3, true) && 
+                    !isSquareUnderAttack(board, 0, 2, true)) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+      }
     }
 
     return false;
@@ -500,8 +569,56 @@ export default function FunZone() {
           }
         }
         
-        newBoard[row][col] = selectedPiece;
-        newBoard[selectedRow][selectedCol] = '';
+        // Handle castling - move both king and rook
+        const isCastling = (selectedPiece === '♔' || selectedPiece === '♚') && Math.abs(col - selectedCol) === 2;
+        if (isCastling) {
+          // Move king
+          newBoard[row][col] = selectedPiece;
+          newBoard[selectedRow][selectedCol] = '';
+          
+          // Move rook
+          if (col === 6) {
+            // Kingside castling
+            const rookCol = 7;
+            const newRookCol = 5;
+            newBoard[row][newRookCol] = newBoard[row][rookCol];
+            newBoard[row][rookCol] = '';
+          } else if (col === 2) {
+            // Queenside castling
+            const rookCol = 0;
+            const newRookCol = 3;
+            newBoard[row][newRookCol] = newBoard[row][rookCol];
+            newBoard[row][rookCol] = '';
+          }
+        } else {
+          // Normal move
+          newBoard[row][col] = selectedPiece;
+          newBoard[selectedRow][selectedCol] = '';
+        }
+        
+        // Update castling rights
+        const newCastlingRights = { ...castlingRights };
+        if (selectedPiece === '♔') {
+          newCastlingRights.whiteKingMoved = true;
+        } else if (selectedPiece === '♚') {
+          newCastlingRights.blackKingMoved = true;
+        } else if (selectedPiece === '♖') {
+          if (selectedRow === 7 && selectedCol === 7) newCastlingRights.whiteKingsideRookMoved = true;
+          if (selectedRow === 7 && selectedCol === 0) newCastlingRights.whiteQueensideRookMoved = true;
+        } else if (selectedPiece === '♜') {
+          if (selectedRow === 0 && selectedCol === 7) newCastlingRights.blackKingsideRookMoved = true;
+          if (selectedRow === 0 && selectedCol === 0) newCastlingRights.blackQueensideRookMoved = true;
+        }
+        // Also mark rook as moved if it was captured
+        if (capturedPiece === '♖') {
+          if (row === 7 && col === 7) newCastlingRights.whiteKingsideRookMoved = true;
+          if (row === 7 && col === 0) newCastlingRights.whiteQueensideRookMoved = true;
+        } else if (capturedPiece === '♜') {
+          if (row === 0 && col === 7) newCastlingRights.blackKingsideRookMoved = true;
+          if (row === 0 && col === 0) newCastlingRights.blackQueensideRookMoved = true;
+        }
+        setCastlingRights(newCastlingRights);
+        
         setChessBoard(newBoard);
         setLastMove([[selectedRow, selectedCol], [row, col]]);
         setSelectedSquare(null);
@@ -675,6 +792,14 @@ export default function FunZone() {
     setWhiteScore(0);
     setBlackScore(0);
     setCurrentTurn('white');
+    setCastlingRights({
+      whiteKingMoved: false,
+      whiteKingsideRookMoved: false,
+      whiteQueensideRookMoved: false,
+      blackKingMoved: false,
+      blackKingsideRookMoved: false,
+      blackQueensideRookMoved: false,
+    });
     if (chessMode === '1-player') {
       setChessMessage('Your turn! (White pieces)');
     } else {
