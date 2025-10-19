@@ -29,19 +29,19 @@ export default function ScrollToTop() {
     };
   }, []);
 
-  // Only show the floating button on desktop (lg and up)
+  // Only show the floating button on desktop (lg and up = 1024px)
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    if (typeof mq.addEventListener === 'function') {
-      mq.addEventListener('change', update);
-      return () => mq.removeEventListener('change', update);
-    } else {
-      // Safari fallback
-      mq.addListener(update);
-      return () => mq.removeListener(update);
-    }
+    const checkDesktop = () => {
+      // Use window.innerWidth for immediate response
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    
+    return () => {
+      window.removeEventListener('resize', checkDesktop);
+    };
   }, []);
 
   const scrollToTop = () => {
