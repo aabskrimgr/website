@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Social Media Preview Image</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        .preview-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Social Media Preview Image Generator</h1>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Click "Generate Preview Image" to create a default image</li>
+                <li>Or upload your profile picture below</li>
+                <li>Click "Download Image" to save as og-image.png</li>
+                <li>Place the downloaded file in your <code>public/</code> folder</li>
+                <li>Image size: 1200x630px (perfect for Facebook, Twitter, LinkedIn)</li>
+            </ol>
+        </div>
+
+        <div class="controls">
+            <input type="file" id="photoUpload" accept="image/*" onchange="loadPhoto(event)">
+            <br>
+            <button onclick="generateImage()">Generate Preview Image</button>
+            <button onclick="downloadImage()">Download Image (og-image.png)</button>
+        </div>
+
+        <canvas id="canvas" width="1200" height="630"></canvas>
+
+        <div class="preview-area">
+            <h3>What it will look like:</h3>
+            <p><strong>Facebook/LinkedIn:</strong> Large preview card with image</p>
+            <p><strong>Twitter:</strong> Summary card with large image</p>
+            <p><strong>WhatsApp/Telegram:</strong> Link preview with image</p>
+            <p><strong>Google Search:</strong> Image shown in search results</p>
+        </div>
+    </div>
+
+    <script>
+        let profilePhoto = null;
+
+        function loadPhoto(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    profilePhoto = img;
+                    generateImage();
+                };
+                img.src = e.target.result;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function generateImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+            gradient.addColorStop(0, '#1e293b');
+            gradient.addColorStop(0.5, '#312e81');
+            gradient.addColorStop(1, '#7c2d12');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 630);
+
+            // Add pattern/texture
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            for (let i = 0; i < 50; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * 1200, Math.random() * 630, Math.random() * 100, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Profile photo circle (if available)
+            if (profilePhoto) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(250, 315, 180, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+                
+                // Draw photo
+                const photoSize = 360;
+                ctx.drawImage(profilePhoto, 70, 135, photoSize, photoSize);
+                ctx.restore();
+
+                // Photo border
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.arc(250, 315, 180, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                // Placeholder circle
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+                ctx.beginPath();
+                ctx.arc(250, 315, 180, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                
+                // Placeholder icon
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 100px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('AR', 250, 315);
+            }
+
+            // Text area
+            const textX = 500;
+            
+            // Name
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 72px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Aabiskar Regmi', textX, 200);
+
+            // Title
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText('Computer Engineer', textX, 280);
+
+            // Subtitle
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '32px Arial';
+            ctx.fillText('Robotics & IoT Developer', textX, 340);
+
+            // Location with icon
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '28px Arial';
+            ctx.fillText('📍 Pokhara, Nepal', textX, 400);
+
+            // Specialties
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '24px Arial';
+            ctx.fillText('🤖 Autonomous Systems  •  🔧 Embedded Systems  •  🏆 Award Winner', textX, 460);
+
+            // Bottom bar
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+            ctx.fillRect(0, 570, 1200, 60);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 28px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('aabiskarregmi.com.np', 600, 605);
+        }
+
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            const link = document.createElement('a');
+            link.download = 'og-image.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Generate default image on load
+        window.onload = generateImage;
+    </script>
+</body>
+</html>
