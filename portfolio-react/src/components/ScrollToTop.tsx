@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function ScrollToTop() {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -26,6 +27,21 @@ export default function ScrollToTop() {
     return () => {
       window.removeEventListener('scroll', toggleVisibility);
     };
+  }, []);
+
+  // Only show the floating button on desktop (lg and up)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', update);
+      return () => mq.removeEventListener('change', update);
+    } else {
+      // Safari fallback
+      mq.addListener(update);
+      return () => mq.removeListener(update);
+    }
   }, []);
 
   const scrollToTop = () => {
@@ -65,7 +81,7 @@ export default function ScrollToTop() {
 
       {/* Scroll to Top Button */}
       <AnimatePresence>
-        {isVisible && (
+        {isVisible && isDesktop && (
           <motion.button
             initial={{ opacity: 0, scale: 0, y: 100 }}
             animate={{ 
@@ -86,7 +102,7 @@ export default function ScrollToTop() {
             }}
             whileTap={{ scale: 0.9 }}
             onClick={scrollToTop}
-            className="hidden md:flex fixed bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-primary-500/50 transition-shadow duration-300 group cursor-pointer"
+            className="hidden lg:flex fixed bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-primary-500/50 transition-shadow duration-300 group cursor-pointer"
             aria-label="Scroll to top"
           >
             <FaArrowUp className="text-2xl" />
