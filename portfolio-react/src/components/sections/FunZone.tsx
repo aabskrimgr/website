@@ -476,8 +476,8 @@ export default function FunZone() {
           if (isWhiteKing) {
             // White kingside: king on e1 (7,4) to g1 (7,6), rook on h1 (7,7)
             if (fromRow === 7 && fromCol === 4 && !castlingRights.whiteKingMoved && !castlingRights.whiteKingsideRookMoved) {
-              // Check squares between king and rook are empty
-              if (board[7][5] === '' && board[7][6] === '') {
+              // Check rook is on h1 and squares between king and rook are empty
+              if (board[7][7] === '♖' && board[7][5] === '' && board[7][6] === '') {
                 // Check king is not in check, doesn't pass through check, and doesn't end in check
                 if (!isSquareUnderAttack(board, 7, 4, false) && 
                     !isSquareUnderAttack(board, 7, 5, false) && 
@@ -489,7 +489,8 @@ export default function FunZone() {
           } else {
             // Black kingside: king on e8 (0,4) to g8 (0,6), rook on h8 (0,7)
             if (fromRow === 0 && fromCol === 4 && !castlingRights.blackKingMoved && !castlingRights.blackKingsideRookMoved) {
-              if (board[0][5] === '' && board[0][6] === '') {
+              // Check rook is on h8 and squares between king and rook are empty
+              if (board[0][7] === '♜' && board[0][5] === '' && board[0][6] === '') {
                 if (!isSquareUnderAttack(board, 0, 4, true) && 
                     !isSquareUnderAttack(board, 0, 5, true) && 
                     !isSquareUnderAttack(board, 0, 6, true)) {
@@ -504,7 +505,8 @@ export default function FunZone() {
           if (isWhiteKing) {
             // White queenside: king on e1 (7,4) to c1 (7,2), rook on a1 (7,0)
             if (fromRow === 7 && fromCol === 4 && !castlingRights.whiteKingMoved && !castlingRights.whiteQueensideRookMoved) {
-              if (board[7][1] === '' && board[7][2] === '' && board[7][3] === '') {
+              // Check rook is on a1 and squares between king and rook are empty
+              if (board[7][0] === '♖' && board[7][1] === '' && board[7][2] === '' && board[7][3] === '') {
                 if (!isSquareUnderAttack(board, 7, 4, false) && 
                     !isSquareUnderAttack(board, 7, 3, false) && 
                     !isSquareUnderAttack(board, 7, 2, false)) {
@@ -515,7 +517,8 @@ export default function FunZone() {
           } else {
             // Black queenside: king on e8 (0,4) to c8 (0,2), rook on a8 (0,0)
             if (fromRow === 0 && fromCol === 4 && !castlingRights.blackKingMoved && !castlingRights.blackQueensideRookMoved) {
-              if (board[0][1] === '' && board[0][2] === '' && board[0][3] === '') {
+              // Check rook is on a8 and squares between king and rook are empty
+              if (board[0][0] === '♜' && board[0][1] === '' && board[0][2] === '' && board[0][3] === '') {
                 if (!isSquareUnderAttack(board, 0, 4, true) && 
                     !isSquareUnderAttack(board, 0, 3, true) && 
                     !isSquareUnderAttack(board, 0, 2, true)) {
@@ -667,6 +670,7 @@ export default function FunZone() {
         setChessBoard(newBoard);
         setLastMove([[selectedRow, selectedCol], [row, col]]);
         setSelectedSquare(null);
+        setValidMoves([]); // Clear valid moves after making a move
         
         // In 2-player mode
         if (chessMode === '2-player') {
@@ -711,7 +715,7 @@ export default function FunZone() {
           // Computer's turn with rules
           setTimeout(() => {
             makeComputerChessMove(newBoard);
-          }, 500);
+          }, 1500);
         }
       } else {
         setSelectedSquare(null);

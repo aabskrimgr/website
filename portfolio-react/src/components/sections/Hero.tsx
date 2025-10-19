@@ -1,9 +1,5 @@
-﻿import { Suspense } from "react";
-import { motion } from "framer-motion";
-import { Canvas } from "@react-three/fiber";
+﻿import { motion } from "framer-motion";
 import { FaGithub, FaTwitter, FaInstagram, FaFacebook, FaLinkedin } from "react-icons/fa";
-import AnimatedSphere from "../3d/AnimatedSphere";
-import ParticleField from "../3d/ParticleField";
 
 export default function Hero() {
   const socialLinks = [
@@ -16,19 +12,6 @@ export default function Hero() {
 
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-black">
-      {/* 3D Background */}
-      <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-          <Suspense fallback={null}>
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} intensity={1} />
-            <pointLight position={[-10, -10, -10]} color="#8b5cf6" intensity={0.5} />
-            <AnimatedSphere />
-            <ParticleField />
-          </Suspense>
-        </Canvas>
-      </div>
-
       {/* Animated Gradient Blobs */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
