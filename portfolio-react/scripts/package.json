@@ -1,0 +1,11 @@
+{
+  "name": "generate-favicons",
+  "version": "1.0.0",
+  "description": "Generate favicons and social images",
+  "scripts": {
+    "generate": "node generate-images.js"
+  },
+  "dependencies": {
+    "sharp": "^0.33.0"
+  }
+}
