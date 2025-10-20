@@ -13,7 +13,7 @@ export default function FunZone() {
   const [winner, setWinner] = useState<string | null>(null);
   const [playerScore, setPlayerScore] = useState(0);
   const [computerScore, setComputerScore] = useState(0);
-  const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   
   // Snake Game state (20 cols x 15 rows for rectangular board)
   const SNAKE_COLS = 20;
@@ -182,7 +182,16 @@ export default function FunZone() {
       return emptySquares[Math.floor(Math.random() * emptySquares.length)];
     }
     
-    // Hard mode: Smart AI
+    // Medium mode: 70% smart moves, 30% random
+    if (difficulty === 'medium') {
+      // 30% chance to make a random move
+      if (Math.random() < 0.3) {
+        return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+      }
+      // Otherwise fall through to smart AI logic
+    }
+    
+    // Hard/Medium (smart) mode: Smart AI
     const lines = [
       [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
       [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
@@ -923,13 +932,36 @@ export default function FunZone() {
               </div>
             </div>
 
+            {/* Speed Control Slider */}
+            {!snakeGameStarted && (
+              <div className="mb-4 px-2">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                  Game Speed: {snakeSpeed === 200 ? 'Slow 🐢' : snakeSpeed === 150 ? 'Normal 🚶' : snakeSpeed === 100 ? 'Fast 🏃' : 'Very Fast 🚀'}
+                </label>
+                <input
+                  type="range"
+                  min="50"
+                  max="200"
+                  step="50"
+                  value={snakeSpeed}
+                  onChange={(e) => setSnakeSpeed(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-green-600"
+                />
+                <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <span>Very Fast</span>
+                  <span>Slow</span>
+                </div>
+              </div>
+            )}
+
             {/* Snake Game Board */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-3 mb-4 border-4 border-green-600/30 shadow-lg shadow-green-600/20">
               <div 
-                className="grid gap-[2px]" 
+                className="grid gap-[2px] w-full"
                 style={{ 
                   gridTemplateColumns: `repeat(${SNAKE_COLS}, 1fr)`,
-                  gridTemplateRows: `repeat(${SNAKE_ROWS}, 1fr)`
+                  gridTemplateRows: `repeat(${SNAKE_ROWS}, 1fr)`,
+                  aspectRatio: `${SNAKE_COLS}/${SNAKE_ROWS}`
                 }}
               >
                 {Array.from({ length: SNAKE_ROWS * SNAKE_COLS }).map((_, index) => {
@@ -945,7 +977,7 @@ export default function FunZone() {
                   return (
                     <div
                       key={index}
-                      className={`aspect-square rounded-sm transition-all duration-100 ${
+                      className={`w-full h-full rounded-sm transition-all duration-100 ${
                         isSnake
                           ? isHead
                             ? 'bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50 scale-110'
@@ -1075,6 +1107,16 @@ export default function FunZone() {
                 }`}
               >
                 😊 Easy
+              </button>
+              <button
+                onClick={() => setDifficulty('medium')}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                  difficulty === 'medium'
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                🎯 Medium
               </button>
               <button
                 onClick={() => setDifficulty('hard')}
