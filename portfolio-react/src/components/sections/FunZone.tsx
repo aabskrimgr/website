@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { FaUsers, FaGamepad, FaTrophy } from 'react-icons/fa';
+import { FaGamepad } from 'react-icons/fa';
 
 export default function FunZone() {
   const [ref, inView] = useInView({
@@ -9,19 +9,20 @@ export default function FunZone() {
     threshold: 0.1,
   });
 
-  const [visitorCount, setVisitorCount] = useState(0);
   const [board, setBoard] = useState(Array(9).fill(null));
   const [winner, setWinner] = useState<string | null>(null);
   const [playerScore, setPlayerScore] = useState(0);
   const [computerScore, setComputerScore] = useState(0);
   const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
   
-  // Rock-Paper-Scissors state
-  const [rpsPlayerChoice, setRpsPlayerChoice] = useState<string | null>(null);
-  const [rpsComputerChoice, setRpsComputerChoice] = useState<string | null>(null);
-  const [rpsResult, setRpsResult] = useState<string | null>(null);
-  const [rpsPlayerScore, setRpsPlayerScore] = useState(0);
-  const [rpsComputerScore, setRpsComputerScore] = useState(0);
+  // Snake Game state
+  const [snake, setSnake] = useState<[number, number][]>([[8, 8], [8, 7]]);
+  const [food, setFood] = useState<[number, number]>([5, 5]);
+  const [snakeDirection, setSnakeDirection] = useState<'UP' | 'DOWN' | 'LEFT' | 'RIGHT'>('RIGHT');
+  const [snakeGameOver, setSnakeGameOver] = useState(false);
+  const [snakeScore, setSnakeScore] = useState(0);
+  const [snakeHighScore, setSnakeHighScore] = useState(0);
+  const [snakeGameStarted, setSnakeGameStarted] = useState(false);
 
   // Simple Chess state (8x8 board)
   const initialChessBoard = [
@@ -54,94 +55,91 @@ export default function FunZone() {
     blackQueensideRookMoved: false,
   });
 
-  // Initialize visitor count with reliable tracking
+  // Snake Game logic
   useEffect(() => {
-    const fetchVisitorCount = async () => {
-      try {
-        // Dynamic import to avoid build issues
-        const { getVisitorId, generateFingerprint, hasBeenCounted, markAsCounted } = await import('../../utils/visitorTracking');
-        
-        const visitorId = getVisitorId();
-        const fingerprint = await generateFingerprint();
-        const alreadyCounted = hasBeenCounted();
-        
-        // Determine API endpoint (use Netlify function in production, fallback in dev)
-        const apiUrl = import.meta.env.PROD 
-          ? '/.netlify/functions/visitor-count'
-          : 'https://aabiskarregmi.com.np/.netlify/functions/visitor-count';
-        
-        if (!alreadyCounted) {
-          // New visitor - increment count
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              visitorId,
-              fingerprint,
-            }),
-          });
-          
-          const data = await response.json();
-          
-          if (data.count) {
-            markAsCounted();
-            animateCount(data.count);
-          }
-        } else {
-          // Returning visitor - just get count
-          const response = await fetch(apiUrl);
-          const data = await response.json();
-          
-          if (data.count) {
-            animateCount(data.count);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching visitor count:', error);
-        // Fallback: show a reasonable estimated count
-        const fallbackCount = 1250 + Math.floor(Math.random() * 50);
-        setVisitorCount(fallbackCount);
+    if (!snakeGameStarted || snakeGameOver) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowUp':
+          if (snakeDirection !== 'DOWN') setSnakeDirection('UP');
+          break;
+        case 'ArrowDown':
+          if (snakeDirection !== 'UP') setSnakeDirection('DOWN');
+          break;
+        case 'ArrowLeft':
+          if (snakeDirection !== 'RIGHT') setSnakeDirection('LEFT');
+          break;
+        case 'ArrowRight':
+          if (snakeDirection !== 'LEFT') setSnakeDirection('RIGHT');
+          break;
       }
     };
 
-    const animateCount = (target: number) => {
-      let current = 0;
-      const increment = Math.ceil(target / 50);
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-          setVisitorCount(target);
-          clearInterval(timer);
-        } else {
-          setVisitorCount(current);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [snakeDirection, snakeGameStarted, snakeGameOver]);
+
+  useEffect(() => {
+    if (!snakeGameStarted || snakeGameOver) return;
+
+    const moveSnake = () => {
+      setSnake((prevSnake) => {
+        const newSnake = [...prevSnake];
+        const head = newSnake[0];
+        let newHead: [number, number];
+
+        switch (snakeDirection) {
+          case 'UP':
+            newHead = [head[0] - 1, head[1]];
+            break;
+          case 'DOWN':
+            newHead = [head[0] + 1, head[1]];
+            break;
+          case 'LEFT':
+            newHead = [head[0], head[1] - 1];
+            break;
+          case 'RIGHT':
+            newHead = [head[0], head[1] + 1];
+            break;
         }
-      }, 20);
+
+        // Check collision with walls
+        if (newHead[0] < 0 || newHead[0] >= 16 || newHead[1] < 0 || newHead[1] >= 16) {
+          setSnakeGameOver(true);
+          if (snakeScore > snakeHighScore) setSnakeHighScore(snakeScore);
+          return prevSnake;
+        }
+
+        // Check collision with self
+        if (newSnake.some(segment => segment[0] === newHead[0] && segment[1] === newHead[1])) {
+          setSnakeGameOver(true);
+          if (snakeScore > snakeHighScore) setSnakeHighScore(snakeScore);
+          return prevSnake;
+        }
+
+        newSnake.unshift(newHead);
+
+        // Check if food eaten
+        if (newHead[0] === food[0] && newHead[1] === food[1]) {
+          setSnakeScore(prev => prev + 10);
+          // Generate new food position
+          let newFood: [number, number];
+          do {
+            newFood = [Math.floor(Math.random() * 16), Math.floor(Math.random() * 16)];
+          } while (newSnake.some(segment => segment[0] === newFood[0] && segment[1] === newFood[1]));
+          setFood(newFood);
+        } else {
+          newSnake.pop();
+        }
+
+        return newSnake;
+      });
     };
 
-    fetchVisitorCount();
-
-    // Poll for updates every 2 minutes to show live count
-    const pollInterval = setInterval(async () => {
-      try {
-        const apiUrl = import.meta.env.PROD 
-          ? '/.netlify/functions/visitor-count'
-          : 'https://aabiskarregmi.com.np/.netlify/functions/visitor-count';
-          
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        
-        if (data.count && data.count !== visitorCount) {
-          setVisitorCount(data.count);
-        }
-      } catch (error) {
-        // Silently fail for polling errors
-      }
-    }, 120000); // Update every 2 minutes
-
-    return () => clearInterval(pollInterval);
-  }, [visitorCount]);
+    const gameInterval = setInterval(moveSnake, 150);
+    return () => clearInterval(gameInterval);
+  }, [snakeDirection, snakeGameStarted, snakeGameOver, food, snakeScore, snakeHighScore]);
 
   // Tic-Tac-Toe logic
   const calculateWinner = (squares: (string | null)[]) => {
@@ -260,37 +258,14 @@ export default function FunZone() {
     setWinner(null);
   };
 
-  // Rock-Paper-Scissors logic
-  const playRPS = (playerChoice: string) => {
-    const choices = ['🪨 Rock', '📄 Paper', '✂️ Scissors'];
-    const computerChoice = choices[Math.floor(Math.random() * choices.length)];
-    
-    setRpsPlayerChoice(playerChoice);
-    setRpsComputerChoice(computerChoice);
-    
-    // Determine winner
-    const player = playerChoice.split(' ')[1];
-    const computer = computerChoice.split(' ')[1];
-    
-    if (player === computer) {
-      setRpsResult("It's a Tie! 🤝");
-    } else if (
-      (player === 'Rock' && computer === 'Scissors') ||
-      (player === 'Paper' && computer === 'Rock') ||
-      (player === 'Scissors' && computer === 'Paper')
-    ) {
-      setRpsResult('You Win! 🎉');
-      setRpsPlayerScore(prev => prev + 1);
-    } else {
-      setRpsResult('Computer Wins! 🤖');
-      setRpsComputerScore(prev => prev + 1);
-    }
-  };
-
-  const resetRPS = () => {
-    setRpsPlayerChoice(null);
-    setRpsComputerChoice(null);
-    setRpsResult(null);
+  // Snake Game functions
+  const startSnakeGame = () => {
+    setSnake([[8, 8], [8, 7]]);
+    setFood([5, 5]);
+    setSnakeDirection('RIGHT');
+    setSnakeGameOver(false);
+    setSnakeScore(0);
+    setSnakeGameStarted(true);
   };
 
   // Get piece value for scoring
@@ -904,7 +879,7 @@ export default function FunZone() {
         </motion.div>
 
         <div ref={ref} className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {/* Visitor Counter */}
+          {/* Snake Game */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
@@ -912,112 +887,89 @@ export default function FunZone() {
             className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl"
           >
             <div className="flex items-center justify-center mb-6">
-              <FaUsers className="text-5xl text-primary-600 mr-4" />
+              <FaGamepad className="text-5xl text-green-600 mr-4" />
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Site Visitors
+                  Snake Game
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  You're visitor #{visitorCount.toLocaleString()}
+                  Use arrow keys to play!
                 </p>
               </div>
             </div>
-            
+
+            {/* Snake Score */}
+            <div className="flex justify-around mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {snakeScore}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {snakeHighScore}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">High Score</div>
+              </div>
+            </div>
+
+            {/* Snake Game Board */}
+            <div className="bg-gray-900 rounded-lg p-2 mb-4">
+              <div className="grid grid-cols-16 gap-0" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
+                {Array.from({ length: 16 * 16 }).map((_, index) => {
+                  const row = Math.floor(index / 16);
+                  const col = index % 16;
+                  const isSnake = snake.some(segment => segment[0] === row && segment[1] === col);
+                  const isHead = snake[0] && snake[0][0] === row && snake[0][1] === col;
+                  const isFood = food[0] === row && food[1] === col;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`aspect-square ${
+                        isSnake
+                          ? isHead
+                            ? 'bg-green-500'
+                            : 'bg-green-400'
+                          : isFood
+                          ? 'bg-red-500 rounded-full'
+                          : 'bg-gray-800'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Game Controls */}
             <div className="text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={inView ? { scale: 1 } : {}}
-                transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
-                className="text-6xl font-bold gradient-text mb-4"
-              >
-                {visitorCount.toLocaleString()}
-              </motion.div>
-              <p className="text-gray-600 dark:text-gray-400">
-                Thank you for visiting! 🎉
-              </p>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-center gap-2 text-yellow-500">
-                <FaTrophy className="text-2xl" />
-                <span className="text-gray-900 dark:text-white font-semibold">
-                  Thanks for stopping by!
-                </span>
-              </div>
-            </div>
-
-            {/* Rock-Paper-Scissors Game - Inside same column */}
-            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-center mb-4">
-                <FaGamepad className="text-4xl text-orange-600 mr-3" />
+              {!snakeGameStarted && !snakeGameOver && (
+                <button
+                  onClick={startSnakeGame}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+                >
+                  Start Game
+                </button>
+              )}
+              {snakeGameOver && (
                 <div>
-                  <h4 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Rock-Paper-Scissors
-                  </h4>
-                </div>
-              </div>
-
-              {/* RPS Score */}
-              <div className="flex justify-around mb-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {rpsPlayerScore}
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">You</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">
-                    {rpsComputerScore}
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Computer</div>
-                </div>
-              </div>
-
-              {/* RPS Choices */}
-              <div className="flex justify-center gap-3 mb-4">
-                {['🪨 Rock', '📄 Paper', '✂️ Scissors'].map((choice) => (
-                  <motion.button
-                    key={choice}
-                    onClick={() => playRPS(choice)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-16 h-16 flex items-center justify-center text-3xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg hover:shadow-lg transition-all duration-300"
-                  >
-                    {choice.split(' ')[0]}
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* RPS Result */}
-              <div className="text-center min-h-[100px]">
-                {rpsResult && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="space-y-2"
-                  >
-                    <div className="flex justify-around items-center text-3xl">
-                      <div>{rpsPlayerChoice?.split(' ')[0]}</div>
-                      <div className="text-sm">VS</div>
-                      <div>{rpsComputerChoice?.split(' ')[0]}</div>
-                    </div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {rpsResult}
-                    </p>
-                    <button
-                      onClick={resetRPS}
-                      className="px-4 py-1 bg-gradient-to-r from-orange-600 to-red-600 text-white text-sm rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
-                    >
-                      Play Again
-                    </button>
-                  </motion.div>
-                )}
-                {!rpsResult && (
-                  <p className="text-gray-600 dark:text-gray-400 text-sm pt-4">
-                    Choose your move!
+                  <p className="text-lg font-bold text-red-600 mb-3">
+                    Game Over! Score: {snakeScore}
                   </p>
-                )}
-              </div>
+                  <button
+                    onClick={startSnakeGame}
+                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+                  >
+                    Play Again
+                  </button>
+                </div>
+              )}
+              {snakeGameStarted && !snakeGameOver && (
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  🎮 Use arrow keys to control
+                </p>
+              )}
             </div>
           </motion.div>
 
