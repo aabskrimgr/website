@@ -205,7 +205,7 @@ export default function Contact() {
               {/* Chess Section */}
               <div className="mt-8 pt-8 border-t border-white/20">
                 <a
-                  href="https://www.chess.com/member/aabiskar_regmi"
+                  href="https://www.chess.com/member/aabiskaregmi"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 bg-white/10 hover:bg-white/20 p-4 rounded-xl transition-all duration-300 group"

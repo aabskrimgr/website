@@ -46,7 +46,7 @@ export default function Footer() {
     },
     { 
       icon: FaChess, 
-      href: 'https://www.chess.com/member/aabiskarregmi', 
+      href: 'https://www.chess.com/member/aabiskaregmi', 
       label: 'Chess.com',
       color: 'hover:text-green-400'
     },
