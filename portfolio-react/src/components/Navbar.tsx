@@ -240,6 +240,17 @@ export default function Navbar() {
                 style={{ backgroundColor: isDarkMode ? 'rgb(17, 24, 39)' : 'rgb(255,255,255)', paddingTop: navHeight }}
               >
                 <div className="flex flex-col gap-4 py-4 px-6">
+                  {/* Close Button */}
+                  <div className="flex justify-end -mt-2 mb-2">
+                    <button
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      aria-label="Close menu"
+                    >
+                      <FaTimes size={20} />
+                    </button>
+                  </div>
+
                   {navLinks.map((link) => (
                     <a
                       key={link.name}
