@@ -19,7 +19,7 @@ export default function FunZone() {
   const SNAKE_COLS = 20;
   const SNAKE_ROWS = 15;
   const [snake, setSnake] = useState<[number, number][]>([[7, 10], [7, 9], [7, 8]]);
-  const [food, setFood] = useState<[number, number]>([7, 15]);
+  const [food, setFood] = useState<[number, number]>([7, 14]); // Away from right border
   const [snakeDirection, setSnakeDirection] = useState<'UP' | 'DOWN' | 'LEFT' | 'RIGHT'>('RIGHT');
   const [snakeGameOver, setSnakeGameOver] = useState(false);
   const [snakeScore, setSnakeScore] = useState(0);
@@ -131,10 +131,13 @@ export default function FunZone() {
           if (newScore % 50 === 0 && snakeSpeed > 50) {
             setSnakeSpeed(prev => Math.max(50, prev - 10));
           }
-          // Generate new food position
+          // Generate new food position (with 1-cell margin from borders)
           let newFood: [number, number];
           do {
-            newFood = [Math.floor(Math.random() * SNAKE_ROWS), Math.floor(Math.random() * SNAKE_COLS)];
+            newFood = [
+              1 + Math.floor(Math.random() * (SNAKE_ROWS - 2)), 
+              1 + Math.floor(Math.random() * (SNAKE_COLS - 2))
+            ];
           } while (newSnake.some(segment => segment[0] === newFood[0] && segment[1] === newFood[1]));
           setFood(newFood);
         } else {
@@ -278,7 +281,7 @@ export default function FunZone() {
   // Snake Game functions
   const startSnakeGame = () => {
     setSnake([[7, 10], [7, 9], [7, 8]]);
-    setFood([7, 15]);
+    setFood([7, 14]); // Away from right border
     setSnakeDirection('RIGHT');
     setSnakeGameOver(false);
     setSnakeScore(0);
