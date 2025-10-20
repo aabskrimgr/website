@@ -170,7 +170,7 @@ export default function Footer() {
         <div className="border-t border-gray-700 my-8"></div>
 
         {/* Bottom Bar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col items-center justify-center gap-4">
           <p className="flex items-center gap-2 text-gray-400 text-sm">
             © {currentYear} Created With 
             <FaHeart className="text-red-500 animate-pulse" /> 

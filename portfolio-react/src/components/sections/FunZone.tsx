@@ -58,11 +58,6 @@ export default function FunZone() {
     blackQueensideRookMoved: false,
   });
 
-  // Piano state
-  const [isPlayingSong, setIsPlayingSong] = useState(false);
-  const [selectedSong, setSelectedSong] = useState('');
-  const [audioContext] = useState<AudioContext>(() => new (window.AudioContext || (window as any).webkitAudioContext)());
-
   // Snake Game logic
   useEffect(() => {
     if (!snakeGameStarted || snakeGameOver) return;
@@ -281,116 +276,6 @@ export default function FunZone() {
   const resetGame = () => {
     setBoard(Array(9).fill(null));
     setWinner(null);
-  };
-
-  // Piano frequencies - Extended range
-  const frequencies: { [key: string]: number } = {
-    'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 
-    'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00,
-    'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'B3': 246.94,
-    'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 
-    'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
-    'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
-    'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25,
-    'E5': 659.25, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99,
-    'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77,
-    'C6': 1046.50, 'C#6': 1108.73, 'D6': 1174.66, 'D#6': 1244.51,
-    'E6': 1318.51, 'F6': 1396.91
-  };
-
-  // Song library with note sequences - Popular hits!
-  const songs: { [key: string]: { notes: string[], timing: number[] } } = {
-    'Someone Like You': {
-      // Adele - Main melody
-      notes: ['A4', 'A4', 'C5', 'B4', 'A4', 'E4', 'E4', 'A4', 'A4', 'C5', 'B4', 'A4', 'G4'],
-      timing: [0, 300, 600, 900, 1200, 1600, 1900, 2300, 2600, 2900, 3200, 3500, 3900]
-    },
-    'Let It Be': {
-      // Beatles
-      notes: ['C4', 'G4', 'A4', 'G4', 'F4', 'C4', 'D4', 'C4', 'C4', 'G4', 'A4', 'G4', 'F4', 'G4', 'C4'],
-      timing: [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200]
-    },
-    'Pirates Caribbean': {
-      // Pirates of the Caribbean theme
-      notes: ['A4', 'C5', 'D5', 'D5', 'D5', 'E5', 'F5', 'F5', 'F5', 'G5', 'E5', 'E5', 'D5', 'C5', 'C5', 'D5'],
-      timing: [0, 200, 400, 600, 700, 800, 1000, 1200, 1300, 1400, 1600, 1700, 1900, 2100, 2200, 2400]
-    },
-    'Imperial March': {
-      // Star Wars Darth Vader Theme
-      notes: ['A4', 'A4', 'A4', 'F4', 'C5', 'A4', 'F4', 'C5', 'A4', 'E5', 'E5', 'E5', 'F5', 'C5', 'G4', 'F4', 'C5', 'A4'],
-      timing: [0, 400, 800, 1000, 1200, 1600, 1800, 2000, 2400, 3200, 3600, 4000, 4200, 4400, 4800, 5000, 5200, 5600]
-    },
-    'Bohemian Rhapsody': {
-      // Queen - Intro
-      notes: ['B4', 'C5', 'D5', 'C5', 'B4', 'A4', 'G4', 'A4', 'B4', 'B4', 'A4', 'G4', 'F#4', 'G4'],
-      timing: [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900]
-    },
-    'Fur Elise': {
-      // Beethoven
-      notes: ['E5', 'D#5', 'E5', 'D#5', 'E5', 'B4', 'D5', 'C5', 'A4', 'C4', 'E4', 'A4', 'B4', 'E4', 'G#4', 'B4', 'C5'],
-      timing: [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 2000, 2200, 2400, 2600, 2800, 3000, 3200, 3400]
-    },
-    'Interstellar': {
-      // Hans Zimmer - Main Theme / Cornfield Chase
-      notes: ['A4', 'E5', 'D5', 'C5', 'A4', 'E5', 'D5', 'C5', 'A4', 'C5', 'B4', 'A4', 'G4', 'E4', 'A4', 'G4', 'E4'],
-      timing: [0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800, 5200, 5600, 6000, 6400]
-    },
-    'Mario Theme': {
-      // Super Mario Bros
-      notes: ['E5', 'E5', 'E5', 'C5', 'E5', 'G5', 'G4', 'C5', 'G4', 'E4', 'A4', 'B4', 'A#4', 'A4'],
-      timing: [0, 200, 400, 600, 800, 1200, 1800, 2400, 2800, 3200, 3600, 4000, 4200, 4600]
-    },
-    'Happy Birthday': {
-      notes: ['C4', 'C4', 'D4', 'C4', 'F4', 'E4', 'C4', 'C4', 'D4', 'C4', 'G4', 'F4'],
-      timing: [0, 200, 400, 800, 1200, 1600, 2000, 2200, 2400, 2800, 3200, 3600]
-    }
-  };
-
-  // Piano function - Fixed to work properly
-  const playNote = async (note: string, duration: number = 0.5) => {
-    try {
-      // Resume audio context if suspended (browser autoplay policy)
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = frequencies[note];
-      oscillator.type = 'sine';
-
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration);
-    } catch (error) {
-      console.error('Error playing note:', error);
-    }
-  };
-
-  // Play song function
-  const playSong = async (songName: string) => {
-    if (!songs[songName]) return;
-    
-    setIsPlayingSong(true);
-    setSelectedSong(songName);
-    
-    const song = songs[songName];
-    
-    for (let i = 0; i < song.notes.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, song.timing[i] - (i > 0 ? song.timing[i-1] : 0)));
-      playNote(song.notes[i], 0.3);
-    }
-    
-    setTimeout(() => {
-      setIsPlayingSong(false);
-      setSelectedSong('');
-    }, song.timing[song.timing.length - 1] + 500);
   };
 
   // Snake Game functions
@@ -1455,276 +1340,301 @@ export default function FunZone() {
           </motion.div>
         </div>
 
-        {/* Piano Section */}
+        {/* Music Zone - Ultra Enhanced Design */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-12"
+          transition={{ duration: 0.6 }}
+          className="mt-16"
         >
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-2xl p-8 border-2 border-purple-200 dark:border-purple-900">
-            {/* Song Selector */}
-            <div className="mb-8">
-              <h4 className="text-xl font-bold text-center mb-4 text-gray-800 dark:text-white">
-                🎵 Auto-Play Songs
-              </h4>
-              <div className="flex flex-wrap justify-center gap-3 mb-4">
-                {Object.keys(songs).map((songName) => (
-                  <button
-                    key={songName}
-                    onClick={() => playSong(songName)}
-                    disabled={isPlayingSong}
-                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                      selectedSong === songName
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105'
-                        : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white hover:shadow-lg hover:scale-105'
-                    } ${isPlayingSong ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {songName} {selectedSong === songName && '🎶'}
-                  </button>
-                ))}
-              </div>
-              {isPlayingSong && (
-                <p className="text-center text-purple-600 dark:text-purple-400 font-semibold animate-pulse">
-                  ♪ Playing {selectedSong}... ♪
-                </p>
-              )}
-            </div>
-
-            <div className="border-t-2 border-purple-200 dark:border-purple-800 my-6"></div>
-
-            {/* Manual Play Instructions */}
-            <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-              Or play manually - Click any key below 🎹
-            </p>
+          <div className="relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-800 rounded-3xl shadow-2xl p-10 border-2 border-transparent bg-clip-padding backdrop-blur-sm overflow-hidden">
+            {/* Animated Decorative Background Elements */}
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.2, 1],
+                rotate: [0, 90, 0]
+              }}
+              transition={{ 
+                duration: 20,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl -z-10"
+            />
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.3, 1],
+                rotate: [0, -90, 0]
+              }}
+              transition={{ 
+                duration: 25,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl -z-10"
+            />
             
-            {/* Piano Keyboard - 3 Octaves */}
-            <div className="relative mx-auto overflow-x-auto" style={{ maxWidth: '100%' }}>
-              <div className="flex justify-start items-end relative" style={{ minWidth: '1680px', margin: '0 auto' }}>
-                {/* C3 Octave */}
-                <div className="relative"><button onMouseDown={() => playNote('C3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C3</span></button><button onMouseDown={() => playNote('C#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
-                <div className="relative"><button onMouseDown={() => playNote('D3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">D</span></button><button onMouseDown={() => playNote('D#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
-                <div className="relative"><button onMouseDown={() => playNote('E3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">E</span></button></div>
-                <div className="relative"><button onMouseDown={() => playNote('F3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">F</span></button><button onMouseDown={() => playNote('F#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
-                <div className="relative"><button onMouseDown={() => playNote('G3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">G</span></button><button onMouseDown={() => playNote('G#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
-                <div className="relative"><button onMouseDown={() => playNote('A3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">A</span></button><button onMouseDown={() => playNote('A#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
-                <div className="relative"><button onMouseDown={() => playNote('B3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">B</span></button></div>
-                
-                {/* C4 Octave */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('C4')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C4</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('C#4')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
+            {/* Header Section with Audio Visualizer */}
+            <div className="text-center mb-10">
+              <motion.div
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                className="inline-block"
+              >
+                <div className="relative bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white px-8 py-4 rounded-full text-2xl font-bold shadow-lg mb-4 flex items-center gap-3 overflow-hidden">
+                  {/* Animated background shimmer */}
+                  <motion.div
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                   />
+                  <span className="text-3xl animate-pulse relative z-10">🎵</span>
+                  <span className="relative z-10">Music Lounge</span>
+                  <span className="text-3xl animate-pulse relative z-10">🎧</span>
                 </div>
-
-                {/* D4 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('D4')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">D</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('D#4')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* E4 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('E4')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">E</span>
-                  </button>
-                </div>
-
-                {/* F4 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('F4')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">F</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('F#4')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* G4 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('G4')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">G</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('G#4')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* A4 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('A4')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">A</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('A#4')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* B4 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('B4')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">B</span>
-                  </button>
-                </div>
-
-                {/* C5 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('C5')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('C#5')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* D5 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('D5')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">D</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('D#5')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* E5 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('E5')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">E</span>
-                  </button>
-                </div>
-
-                {/* F5 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('F5')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">F</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('F#5')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* G5 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('G5')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">G</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('G#5')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* A5 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('A5')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">A</span>
-                  </button>
-                  <button
-                    onMouseDown={() => playNote('A#5')}
-                    className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700"
-                    style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }}
-                  />
-                </div>
-
-                {/* B5 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('B5')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">B</span>
-                  </button>
-                </div>
-
-                {/* C6 Octave */}
-                <div className="relative"><button onMouseDown={() => playNote('C6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C6</span></button><button onMouseDown={() => playNote('C#6')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
-                <div className="relative"><button onMouseDown={() => playNote('D6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">D</span></button><button onMouseDown={() => playNote('D#6')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
-                <div className="relative"><button onMouseDown={() => playNote('E6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">E</span></button></div>
-                <div className="relative"><button onMouseDown={() => playNote('F6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">F6</span></button></div>
-              </div>
+              </motion.div>
+              <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl mx-auto">
+                Curated playlists to enhance your focus, creativity, and relaxation
+              </p>
             </div>
 
-            <p className="text-center text-sm text-purple-600 dark:text-purple-400 mt-8 font-semibold">
-              � 3 Full Octaves (C3 - C6) | 36 Keys
-            </p>
+            {/* YouTube Players Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Lofi Hip Hop Radio */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="group"
+              >
+                <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-purple-200 dark:border-purple-800 overflow-hidden">
+                  {/* Animated gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  {/* Live indicator */}
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className="flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      LIVE 24/7
+                    </div>
+                  </div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">🎧</span>
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Lofi Hip Hop Radio
+                          </h4>
+                          <div className="flex gap-2 mt-1">
+                            <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-semibold">Chill</span>
+                            <span className="px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded text-xs font-semibold">Study</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                      🎶 Chill beats to study, relax, and vibe to • Perfect background music
+                    </p>
+                    <div className="relative rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow" style={{ paddingBottom: '56.25%', height: 0 }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src="https://www.youtube.com/embed/jfKfPfyJRdk?si=QGvO8xZ3YzX5xqVK"
+                        title="Lofi Hip Hop Radio"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    {/* Stats bar */}
+                    <div className="flex items-center justify-between mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1">👥 60K+ listening</span>
+                      <span className="flex items-center gap-1">⭐ Most Popular</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Interstellar OST */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="group"
+              >
+                <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-blue-200 dark:border-blue-800 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  {/* Epic badge */}
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      ⚡ EPIC
+                    </div>
+                  </div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">🌌</span>
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Interstellar - Hans Zimmer
+                          </h4>
+                          <div className="flex gap-2 mt-1">
+                            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs font-semibold">Epic</span>
+                            <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-xs font-semibold">Focus</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                      🚀 Epic cinematic soundtrack for deep work • Oscar-winning masterpiece
+                    </p>
+                    <div className="relative rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow" style={{ paddingBottom: '56.25%', height: 0 }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src="https://www.youtube.com/embed/UDVtMYqUAyw?si=x1VGxKxT7xqY8xqY"
+                        title="Interstellar OST"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1">🎬 Cinematic</span>
+                      <span className="flex items-center gap-1">🏆 Award Winner</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Classical Music */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="group"
+              >
+                <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-amber-200 dark:border-amber-800 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  {/* Classic badge */}
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      👑 CLASSIC
+                    </div>
+                  </div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">🎼</span>
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Classical Masters
+                          </h4>
+                          <div className="flex gap-2 mt-1">
+                            <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-xs font-semibold">Timeless</span>
+                            <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded text-xs font-semibold">Study</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                      🎹 Mozart, Bach, Beethoven • Proven to enhance concentration
+                    </p>
+                    <div className="relative rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow" style={{ paddingBottom: '56.25%', height: 0 }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src="https://www.youtube.com/embed/jgpJVI3tDbY"
+                        title="Classical Music for Studying"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1">🧠 Mozart Effect</span>
+                      <span className="flex items-center gap-1">📚 Study Boost</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Jazz Music */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="group"
+              >
+                <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-green-200 dark:border-green-800 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  {/* Relaxed badge */}
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      🎷 SMOOTH
+                    </div>
+                  </div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">☕</span>
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Jazz Café
+                          </h4>
+                          <div className="flex gap-2 mt-1">
+                            <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs font-semibold">Smooth</span>
+                            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded text-xs font-semibold">Work</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                      🎺 Smooth jazz for productive work sessions • Café ambience
+                    </p>
+                    <div className="relative rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow" style={{ paddingBottom: '56.25%', height: 0 }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src="https://www.youtube.com/embed/Dx5qFachd3A"
+                        title="Jazz for Work & Study"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1">☕ Café Vibes</span>
+                      <span className="flex items-center gap-1">💼 Productivity</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Simple Footer Note */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+              className="mt-8 text-center"
+            >
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                🎧 All playlists are free, ad-free, and available 24/7 • Adjust volume to your preference
+              </p>
+            </motion.div>
           </div>
         </motion.div>
       </div>

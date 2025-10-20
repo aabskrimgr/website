@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Live Meta Tags</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #ddd; }
+        h1 { color: #4CAF50; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        pre { background: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #45a049; }
+        .result { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Check Live Meta Tags on aabiskarregmi.com.np</h1>
+    <p>This will fetch the LIVE HTML and show what meta tags are actually deployed.</p>
+    
+    <button onclick="checkMetaTags()">Check Now (Bypass Cache)</button>
+    
+    <div id="result" class="result"></div>
+
+    <script>
+        async function checkMetaTags() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>⏳ Fetching live HTML (cache-busted)...</p>';
+            
+            try {
+                // Add timestamp to bypass cache
+                const url = `https://aabiskarregmi.com.np/?nocache=${Date.now()}`;
+                const response = await fetch(url, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const html = await response.text();
+                
+                // Extract meta tags
+                const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+                const ogImageUrlMatch = html.match(/<meta property="og:image:url" content="([^"]+)"/);
+                const structuredDataMatch = html.match(/"image":\s*"([^"]+)"/);
+                const twitterImageMatch = html.match(/<meta name="twitter:image" content="([^"]+)"/);
+                
+                let output = '<h2>Results:</h2>';
+                
+                // Check og:image
+                if (ogImageMatch) {
+                    const imageUrl = ogImageMatch[1];
+                    if (imageUrl.includes('og-image.png')) {
+                        output += `<p class="success">✅ og:image = ${imageUrl}</p>`;
+                    } else {
+                        output += `<p class="error">❌ og:image = ${imageUrl} (WRONG! Should be og-image.png)</p>`;
+                    }
+                } else {
+                    output += '<p class="error">❌ og:image tag not found!</p>';
+                }
+                
+                // Check og:image:url
+                if (ogImageUrlMatch) {
+                    const imageUrl = ogImageUrlMatch[1];
+                    if (imageUrl.includes('og-image.png')) {
+                        output += `<p class="success">✅ og:image:url = ${imageUrl}</p>`;
+                    } else {
+                        output += `<p class="error">❌ og:image:url = ${imageUrl}</p>`;
+                    }
+                } else {
+                    output += '<p class="error">❌ og:image:url tag not found!</p>';
+                }
+                
+                // Check structured data
+                if (structuredDataMatch) {
+                    const imageUrl = structuredDataMatch[1];
+                    if (imageUrl.includes('og-image.png')) {
+                        output += `<p class="success">✅ Structured Data image = ${imageUrl}</p>`;
+                    } else {
+                        output += `<p class="error">❌ Structured Data image = ${imageUrl} (WRONG!)</p>`;
+                    }
+                } else {
+                    output += '<p class="error">❌ Structured data image not found!</p>';
+                }
+                
+                // Check Twitter
+                if (twitterImageMatch) {
+                    const imageUrl = twitterImageMatch[1];
+                    if (imageUrl.includes('og-image.png')) {
+                        output += `<p class="success">✅ twitter:image = ${imageUrl}</p>`;
+                    } else {
+                        output += `<p class="error">❌ twitter:image = ${imageUrl}</p>`;
+                    }
+                }
+                
+                output += '<hr><h3>Deployment Status:</h3>';
+                output += `<p>Fetched at: ${new Date().toLocaleString()}</p>`;
+                output += `<p>Response headers:</p><pre>${JSON.stringify(Object.fromEntries(response.headers), null, 2)}</pre>`;
+                
+                // Show relevant HTML sections
+                const metaSection = html.match(/<!-- Open Graph[\s\S]*?twitter:image:alt/);
+                if (metaSection) {
+                    output += '<h3>Open Graph Section:</h3><pre>' + metaSection[0].replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+                }
+                
+                resultDiv.innerHTML = output;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
