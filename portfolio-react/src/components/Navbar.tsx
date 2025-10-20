@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBars, FaTimes, FaMoon, FaSun, FaGamepad } from 'react-icons/fa';
+import { FaBars, FaTimes, FaMoon, FaSun, FaGamepad, FaMusic } from 'react-icons/fa';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -102,6 +102,22 @@ export default function Navbar() {
     }
   };
 
+  const scrollToMusicZone = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const funZoneSection = document.getElementById('fun-zone');
+    if (funZoneSection) {
+      const navbarHeight = 80;
+      // Scroll to Fun Zone section and then scroll a bit more to reach music
+      const musicOffset = 800; // Approximate offset to music section within Fun Zone
+      const targetPosition = funZoneSection.offsetTop - navbarHeight + musicOffset;
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
     <motion.nav
       initial={{ y: -100 }}
@@ -140,12 +156,27 @@ export default function Navbar() {
               </motion.a>
             ))}
             
+            {/* Music Zone Icon */}
+            <motion.button
+              onClick={scrollToMusicZone}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: navLinks.length * 0.1 }}
+              whileHover={{ scale: 1.1, rotate: -5 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300"
+              aria-label="Jump to Music Zone"
+              title="Music Zone - Focus Tunes!"
+            >
+              <FaMusic size={20} />
+            </motion.button>
+
             {/* Fun Zone Game Icon */}
             <motion.button
               onClick={scrollToFunZone}
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: navLinks.length * 0.1 }}
+              transition={{ delay: (navLinks.length + 1) * 0.1 }}
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
               className="p-2.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300"
@@ -222,10 +253,19 @@ export default function Navbar() {
                     </a>
                   ))}
 
+                  {/* Music Zone Link for Mobile */}
+                  <button
+                    onClick={scrollToMusicZone}
+                    className="mt-2 flex items-center gap-3 text-left text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium py-3 px-4 rounded-lg"
+                  >
+                    <FaMusic size={20} />
+                    <span>Music Zone - Focus Tunes!</span>
+                  </button>
+
                   {/* Fun Zone Link for Mobile */}
                   <button
                     onClick={scrollToFunZone}
-                    className="mt-2 flex items-center gap-3 text-left text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium py-3 px-4 rounded-lg"
+                    className="flex items-center gap-3 text-left text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium py-3 px-4 rounded-lg"
                   >
                     <FaGamepad size={20} />
                     <span>Fun Zone - Games!</span>
