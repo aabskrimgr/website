@@ -932,28 +932,6 @@ export default function FunZone() {
               </div>
             </div>
 
-            {/* Speed Control Slider */}
-            {!snakeGameStarted && (
-              <div className="mb-4 px-2">
-                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                  Game Speed: {snakeSpeed === 200 ? 'Slow 🐢' : snakeSpeed === 150 ? 'Normal 🚶' : snakeSpeed === 100 ? 'Fast 🏃' : 'Very Fast 🚀'}
-                </label>
-                <input
-                  type="range"
-                  min="50"
-                  max="200"
-                  step="50"
-                  value={snakeSpeed}
-                  onChange={(e) => setSnakeSpeed(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-green-600"
-                />
-                <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  <span>Very Fast</span>
-                  <span>Slow</span>
-                </div>
-              </div>
-            )}
-
             {/* Snake Game Board */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-3 mb-4 border-4 border-green-600/30 shadow-lg shadow-green-600/20">
               <div 
