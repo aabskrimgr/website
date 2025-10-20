@@ -58,6 +58,10 @@ export default function FunZone() {
     blackQueensideRookMoved: false,
   });
 
+  // Piano state
+  const [isPlayingSong, setIsPlayingSong] = useState(false);
+  const [selectedSong, setSelectedSong] = useState('');
+
   // Snake Game logic
   useEffect(() => {
     if (!snakeGameStarted || snakeGameOver) return;
@@ -278,19 +282,51 @@ export default function FunZone() {
     setWinner(null);
   };
 
-  // Piano function
-  const playNote = (note: string) => {
-    // Frequency mapping for piano notes
-    const frequencies: { [key: string]: number } = {
-      'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 
-      'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
-      'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
-      'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25,
-      'E5': 659.25, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99,
-      'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77,
-      'C6': 1046.50
-    };
+  // Piano frequencies - Extended range
+  const frequencies: { [key: string]: number } = {
+    'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 
+    'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00,
+    'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'B3': 246.94,
+    'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 
+    'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
+    'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+    'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25,
+    'E5': 659.25, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99,
+    'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77,
+    'C6': 1046.50, 'C#6': 1108.73, 'D6': 1174.66, 'D#6': 1244.51,
+    'E6': 1318.51, 'F6': 1396.91
+  };
 
+  // Song library with note sequences
+  const songs: { [key: string]: { notes: string[], timing: number[] } } = {
+    'Still D.R.E.': {
+      notes: ['A4', 'C5', 'B4', 'A4', 'G4', 'A4', 'C5', 'B4', 'A4', 'G4', 'E4', 'E4', 'C5', 'B4', 'A4', 'G4'],
+      timing: [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000]
+    },
+    'Shape of You': {
+      notes: ['C#5', 'B4', 'C#5', 'B4', 'C#5', 'B4', 'A4', 'B4', 'C#5', 'B4', 'C#5', 'B4', 'A4', 'G#4', 'F#4'],
+      timing: [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800]
+    },
+    'Fur Elise': {
+      notes: ['E5', 'D#5', 'E5', 'D#5', 'E5', 'B4', 'D5', 'C5', 'A4', 'C4', 'E4', 'A4', 'B4', 'E4', 'G#4', 'B4', 'C5'],
+      timing: [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 2000, 2200, 2400, 2600, 2800, 3000, 3200, 3400]
+    },
+    'Happy Birthday': {
+      notes: ['C4', 'C4', 'D4', 'C4', 'F4', 'E4', 'C4', 'C4', 'D4', 'C4', 'G4', 'F4'],
+      timing: [0, 200, 400, 800, 1200, 1600, 2000, 2200, 2400, 2800, 3200, 3600]
+    },
+    'Twinkle Twinkle': {
+      notes: ['C4', 'C4', 'G4', 'G4', 'A4', 'A4', 'G4', 'F4', 'F4', 'E4', 'E4', 'D4', 'D4', 'C4'],
+      timing: [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900]
+    },
+    'Jingle Bells': {
+      notes: ['E4', 'E4', 'E4', 'E4', 'E4', 'E4', 'E4', 'G4', 'C4', 'D4', 'E4'],
+      timing: [0, 300, 600, 1000, 1300, 1600, 2000, 2300, 2600, 2900, 3200]
+    }
+  };
+
+  // Piano function
+  const playNote = (note: string, duration: number = 0.5) => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -302,10 +338,30 @@ export default function FunZone() {
     oscillator.type = 'sine';
 
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
 
     oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
+    oscillator.stop(audioContext.currentTime + duration);
+  };
+
+  // Play song function
+  const playSong = async (songName: string) => {
+    if (!songs[songName]) return;
+    
+    setIsPlayingSong(true);
+    setSelectedSong(songName);
+    
+    const song = songs[songName];
+    
+    for (let i = 0; i < song.notes.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, song.timing[i] - (i > 0 ? song.timing[i-1] : 0)));
+      playNote(song.notes[i], 0.3);
+    }
+    
+    setTimeout(() => {
+      setIsPlayingSong(false);
+      setSelectedSong('');
+    }, song.timing[song.timing.length - 1] + 500);
   };
 
   // Snake Game functions
@@ -1377,25 +1433,62 @@ export default function FunZone() {
           viewport={{ once: true }}
           className="mt-12"
         >
-          <h3 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            🎹 Musical Piano
-          </h3>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-2xl p-8 border-2 border-purple-200 dark:border-purple-900">
+            {/* Song Selector */}
+            <div className="mb-8">
+              <h4 className="text-xl font-bold text-center mb-4 text-gray-800 dark:text-white">
+                🎵 Auto-Play Songs
+              </h4>
+              <div className="flex flex-wrap justify-center gap-3 mb-4">
+                {Object.keys(songs).map((songName) => (
+                  <button
+                    key={songName}
+                    onClick={() => playSong(songName)}
+                    disabled={isPlayingSong}
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                      selectedSong === songName
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105'
+                        : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white hover:shadow-lg hover:scale-105'
+                    } ${isPlayingSong ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {songName} {selectedSong === songName && '🎶'}
+                  </button>
+                ))}
+              </div>
+              {isPlayingSong && (
+                <p className="text-center text-purple-600 dark:text-purple-400 font-semibold animate-pulse">
+                  ♪ Playing {selectedSong}... ♪
+                </p>
+              )}
+            </div>
+
+            <div className="border-t-2 border-purple-200 dark:border-purple-800 my-6"></div>
+
+            {/* Manual Play Instructions */}
             <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-              Click or use keyboard keys (A-L for white keys, W,E,T,Y,U for black keys)
+              Or play manually - Click any key below 🎹
             </p>
             
-            {/* Piano Keyboard */}
-            <div className="relative mx-auto" style={{ maxWidth: '1200px' }}>
-              <div className="flex justify-center items-end relative">
-                {/* C4 */}
+            {/* Piano Keyboard - 3 Octaves */}
+            <div className="relative mx-auto overflow-x-auto" style={{ maxWidth: '100%' }}>
+              <div className="flex justify-start items-end relative" style={{ minWidth: '1680px', margin: '0 auto' }}>
+                {/* C3 Octave */}
+                <div className="relative"><button onMouseDown={() => playNote('C3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C3</span></button><button onMouseDown={() => playNote('C#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
+                <div className="relative"><button onMouseDown={() => playNote('D3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">D</span></button><button onMouseDown={() => playNote('D#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
+                <div className="relative"><button onMouseDown={() => playNote('E3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">E</span></button></div>
+                <div className="relative"><button onMouseDown={() => playNote('F3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">F</span></button><button onMouseDown={() => playNote('F#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
+                <div className="relative"><button onMouseDown={() => playNote('G3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">G</span></button><button onMouseDown={() => playNote('G#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
+                <div className="relative"><button onMouseDown={() => playNote('A3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">A</span></button><button onMouseDown={() => playNote('A#3')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
+                <div className="relative"><button onMouseDown={() => playNote('B3')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">B</span></button></div>
+                
+                {/* C4 Octave */}
                 <div className="relative">
                   <button
                     onMouseDown={() => playNote('C4')}
                     className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
                     style={{ width: '60px', height: '240px' }}
                   >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C</span>
+                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C4</span>
                   </button>
                   <button
                     onMouseDown={() => playNote('C#4')}
@@ -1592,21 +1685,16 @@ export default function FunZone() {
                   </button>
                 </div>
 
-                {/* C6 */}
-                <div className="relative">
-                  <button
-                    onMouseDown={() => playNote('C6')}
-                    className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300"
-                    style={{ width: '60px', height: '240px' }}
-                  >
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C</span>
-                  </button>
-                </div>
+                {/* C6 Octave */}
+                <div className="relative"><button onMouseDown={() => playNote('C6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">C6</span></button><button onMouseDown={() => playNote('C#6')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
+                <div className="relative"><button onMouseDown={() => playNote('D6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">D</span></button><button onMouseDown={() => playNote('D#6')} className="piano-key black-key absolute bg-black hover:bg-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-700" style={{ width: '36px', height: '150px', left: '42px', top: 0, zIndex: 10 }} /></div>
+                <div className="relative"><button onMouseDown={() => playNote('E6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">E</span></button></div>
+                <div className="relative"><button onMouseDown={() => playNote('F6')} className="piano-key white-key bg-white hover:bg-gray-100 border-2 border-gray-800 rounded-b-lg transition-all duration-75 active:bg-gray-300" style={{ width: '60px', height: '240px' }}><span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-semibold">F6</span></button></div>
               </div>
             </div>
 
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-              🎵 Two full octaves - Play some music!
+            <p className="text-center text-sm text-purple-600 dark:text-purple-400 mt-8 font-semibold">
+              � 3 Full Octaves (C3 - C6) | 36 Keys
             </p>
           </div>
         </motion.div>
