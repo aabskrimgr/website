@@ -15,11 +15,11 @@ export default function FunZone() {
   const [computerScore, setComputerScore] = useState(0);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   
-  // Snake Game state (20 cols x 15 rows for rectangular board)
+  // Snake Game state (20 cols x 20 rows for bigger board)
   const SNAKE_COLS = 20;
-  const SNAKE_ROWS = 15;
-  const [snake, setSnake] = useState<[number, number][]>([[7, 10], [7, 9], [7, 8]]);
-  const [food, setFood] = useState<[number, number]>([7, 14]); // Away from right border
+  const SNAKE_ROWS = 20;
+  const [snake, setSnake] = useState<[number, number][]>([[10, 10], [10, 9], [10, 8]]);
+  const [food, setFood] = useState<[number, number]>([10, 14]); // Away from right border
   const [snakeDirection, setSnakeDirection] = useState<'UP' | 'DOWN' | 'LEFT' | 'RIGHT'>('RIGHT');
   const [snakeGameOver, setSnakeGameOver] = useState(false);
   const [snakeScore, setSnakeScore] = useState(0);
@@ -280,8 +280,8 @@ export default function FunZone() {
 
   // Snake Game functions
   const startSnakeGame = () => {
-    setSnake([[7, 10], [7, 9], [7, 8]]);
-    setFood([7, 14]); // Away from right border
+    setSnake([[10, 10], [10, 9], [10, 8]]);
+    setFood([10, 14]); // Away from right border
     setSnakeDirection('RIGHT');
     setSnakeGameOver(false);
     setSnakeScore(0);
