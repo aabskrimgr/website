@@ -15,14 +15,17 @@ export default function FunZone() {
   const [computerScore, setComputerScore] = useState(0);
   const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
   
-  // Snake Game state
-  const [snake, setSnake] = useState<[number, number][]>([[8, 8], [8, 7]]);
-  const [food, setFood] = useState<[number, number]>([5, 5]);
+  // Snake Game state (20 cols x 15 rows for rectangular board)
+  const SNAKE_COLS = 20;
+  const SNAKE_ROWS = 15;
+  const [snake, setSnake] = useState<[number, number][]>([[7, 10], [7, 9], [7, 8]]);
+  const [food, setFood] = useState<[number, number]>([7, 15]);
   const [snakeDirection, setSnakeDirection] = useState<'UP' | 'DOWN' | 'LEFT' | 'RIGHT'>('RIGHT');
   const [snakeGameOver, setSnakeGameOver] = useState(false);
   const [snakeScore, setSnakeScore] = useState(0);
   const [snakeHighScore, setSnakeHighScore] = useState(0);
   const [snakeGameStarted, setSnakeGameStarted] = useState(false);
+  const [snakeSpeed, setSnakeSpeed] = useState(150);
 
   // Simple Chess state (8x8 board)
   const initialChessBoard = [
@@ -104,8 +107,8 @@ export default function FunZone() {
             break;
         }
 
-        // Check collision with walls
-        if (newHead[0] < 0 || newHead[0] >= 16 || newHead[1] < 0 || newHead[1] >= 16) {
+        // Check collision with walls (SNAKE_ROWS x SNAKE_COLS)
+        if (newHead[0] < 0 || newHead[0] >= SNAKE_ROWS || newHead[1] < 0 || newHead[1] >= SNAKE_COLS) {
           setSnakeGameOver(true);
           if (snakeScore > snakeHighScore) setSnakeHighScore(snakeScore);
           return prevSnake;
@@ -122,11 +125,16 @@ export default function FunZone() {
 
         // Check if food eaten
         if (newHead[0] === food[0] && newHead[1] === food[1]) {
-          setSnakeScore(prev => prev + 10);
+          const newScore = snakeScore + 10;
+          setSnakeScore(newScore);
+          // Increase speed slightly every 50 points
+          if (newScore % 50 === 0 && snakeSpeed > 50) {
+            setSnakeSpeed(prev => Math.max(50, prev - 10));
+          }
           // Generate new food position
           let newFood: [number, number];
           do {
-            newFood = [Math.floor(Math.random() * 16), Math.floor(Math.random() * 16)];
+            newFood = [Math.floor(Math.random() * SNAKE_ROWS), Math.floor(Math.random() * SNAKE_COLS)];
           } while (newSnake.some(segment => segment[0] === newFood[0] && segment[1] === newFood[1]));
           setFood(newFood);
         } else {
@@ -137,9 +145,9 @@ export default function FunZone() {
       });
     };
 
-    const gameInterval = setInterval(moveSnake, 150);
+    const gameInterval = setInterval(moveSnake, snakeSpeed);
     return () => clearInterval(gameInterval);
-  }, [snakeDirection, snakeGameStarted, snakeGameOver, food, snakeScore, snakeHighScore]);
+  }, [snakeDirection, snakeGameStarted, snakeGameOver, food, snakeScore, snakeHighScore, snakeSpeed, SNAKE_ROWS, SNAKE_COLS]);
 
   // Tic-Tac-Toe logic
   const calculateWinner = (squares: (string | null)[]) => {
@@ -260,11 +268,12 @@ export default function FunZone() {
 
   // Snake Game functions
   const startSnakeGame = () => {
-    setSnake([[8, 8], [8, 7]]);
-    setFood([5, 5]);
+    setSnake([[7, 10], [7, 9], [7, 8]]);
+    setFood([7, 15]);
     setSnakeDirection('RIGHT');
     setSnakeGameOver(false);
     setSnakeScore(0);
+    setSnakeSpeed(150);
     setSnakeGameStarted(true);
   };
 
@@ -915,60 +924,123 @@ export default function FunZone() {
             </div>
 
             {/* Snake Game Board */}
-            <div className="bg-gray-900 rounded-lg p-2 mb-4">
-              <div className="grid grid-cols-16 gap-0" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
-                {Array.from({ length: 16 * 16 }).map((_, index) => {
-                  const row = Math.floor(index / 16);
-                  const col = index % 16;
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-3 mb-4 border-4 border-green-600/30 shadow-lg shadow-green-600/20">
+              <div 
+                className="grid gap-[2px]" 
+                style={{ 
+                  gridTemplateColumns: `repeat(${SNAKE_COLS}, 1fr)`,
+                  gridTemplateRows: `repeat(${SNAKE_ROWS}, 1fr)`
+                }}
+              >
+                {Array.from({ length: SNAKE_ROWS * SNAKE_COLS }).map((_, index) => {
+                  const row = Math.floor(index / SNAKE_COLS);
+                  const col = index % SNAKE_COLS;
                   const isSnake = snake.some(segment => segment[0] === row && segment[1] === col);
                   const isHead = snake[0] && snake[0][0] === row && snake[0][1] === col;
                   const isFood = food[0] === row && food[1] === col;
+                  
+                  // Get snake segment index for gradient effect
+                  const segmentIndex = snake.findIndex(segment => segment[0] === row && segment[1] === col);
 
                   return (
                     <div
                       key={index}
-                      className={`aspect-square ${
+                      className={`aspect-square rounded-sm transition-all duration-100 ${
                         isSnake
                           ? isHead
-                            ? 'bg-green-500'
-                            : 'bg-green-400'
+                            ? 'bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50 scale-110'
+                            : segmentIndex < 3
+                            ? 'bg-gradient-to-br from-green-500 to-green-600'
+                            : 'bg-gradient-to-br from-green-600 to-green-700'
                           : isFood
-                          ? 'bg-red-500 rounded-full'
-                          : 'bg-gray-800'
+                          ? 'bg-gradient-to-br from-red-500 to-red-600 rounded-full animate-pulse shadow-lg shadow-red-500/50'
+                          : (row + col) % 2 === 0
+                          ? 'bg-gray-800/50'
+                          : 'bg-gray-800/30'
                       }`}
-                    />
+                    >
+                      {isHead && (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-white">
+                          {snakeDirection === 'UP' ? '▲' : snakeDirection === 'DOWN' ? '▼' : snakeDirection === 'LEFT' ? '◀' : '▶'}
+                        </div>
+                      )}
+                      {isFood && (
+                        <div className="w-full h-full flex items-center justify-center text-xs">
+                          🍎
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             </div>
 
             {/* Game Controls */}
-            <div className="text-center">
+            <div className="space-y-4">
               {!snakeGameStarted && !snakeGameOver && (
-                <button
-                  onClick={startSnakeGame}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
-                >
-                  Start Game
-                </button>
+                <div className="text-center">
+                  <button
+                    onClick={startSnakeGame}
+                    className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg shadow-green-600/50"
+                  >
+                    🐍 Start Game
+                  </button>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-3">
+                    Use arrow keys to control the snake!
+                  </p>
+                </div>
               )}
               {snakeGameOver && (
-                <div>
-                  <p className="text-lg font-bold text-red-600 mb-3">
-                    Game Over! Score: {snakeScore}
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-red-600 mb-2">
+                    Game Over! 💀
+                  </p>
+                  <p className="text-lg text-gray-900 dark:text-white mb-4">
+                    Score: <span className="text-green-600 font-bold">{snakeScore}</span>
                   </p>
                   <button
                     onClick={startSnakeGame}
-                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+                    className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg shadow-green-600/50"
                   >
-                    Play Again
+                    🔄 Play Again
                   </button>
                 </div>
               )}
               {snakeGameStarted && !snakeGameOver && (
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  🎮 Use arrow keys to control
-                </p>
+                <div>
+                  <p className="text-center text-gray-600 dark:text-gray-400 text-sm mb-3">
+                    ⌨️ Use arrow keys or buttons below
+                  </p>
+                  {/* Mobile Controls */}
+                  <div className="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
+                    <div></div>
+                    <button
+                      onClick={() => snakeDirection !== 'DOWN' && setSnakeDirection('UP')}
+                      className="aspect-square bg-gray-700 hover:bg-green-600 text-white rounded-lg font-bold text-2xl transition-all duration-200 active:scale-95"
+                    >
+                      ▲
+                    </button>
+                    <div></div>
+                    <button
+                      onClick={() => snakeDirection !== 'RIGHT' && setSnakeDirection('LEFT')}
+                      className="aspect-square bg-gray-700 hover:bg-green-600 text-white rounded-lg font-bold text-2xl transition-all duration-200 active:scale-95"
+                    >
+                      ◀
+                    </button>
+                    <button
+                      onClick={() => snakeDirection !== 'UP' && setSnakeDirection('DOWN')}
+                      className="aspect-square bg-gray-700 hover:bg-green-600 text-white rounded-lg font-bold text-2xl transition-all duration-200 active:scale-95"
+                    >
+                      ▼
+                    </button>
+                    <button
+                      onClick={() => snakeDirection !== 'LEFT' && setSnakeDirection('RIGHT')}
+                      className="aspect-square bg-gray-700 hover:bg-green-600 text-white rounded-lg font-bold text-2xl transition-all duration-200 active:scale-95"
+                    >
+                      ▶
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </motion.div>
