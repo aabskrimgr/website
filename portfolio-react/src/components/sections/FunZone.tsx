@@ -61,6 +61,7 @@ export default function FunZone() {
   // Piano state
   const [isPlayingSong, setIsPlayingSong] = useState(false);
   const [selectedSong, setSelectedSong] = useState('');
+  const [audioContext] = useState<AudioContext>(() => new (window.AudioContext || (window as any).webkitAudioContext)());
 
   // Snake Game logic
   useEffect(() => {
@@ -297,51 +298,74 @@ export default function FunZone() {
     'E6': 1318.51, 'F6': 1396.91
   };
 
-  // Song library with note sequences
+  // Song library with note sequences - Popular hits!
   const songs: { [key: string]: { notes: string[], timing: number[] } } = {
-    'Still D.R.E.': {
-      notes: ['A4', 'C5', 'B4', 'A4', 'G4', 'A4', 'C5', 'B4', 'A4', 'G4', 'E4', 'E4', 'C5', 'B4', 'A4', 'G4'],
-      timing: [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000]
+    'Someone Like You': {
+      // Adele - Main melody
+      notes: ['A4', 'A4', 'C5', 'B4', 'A4', 'E4', 'E4', 'A4', 'A4', 'C5', 'B4', 'A4', 'G4'],
+      timing: [0, 300, 600, 900, 1200, 1600, 1900, 2300, 2600, 2900, 3200, 3500, 3900]
     },
-    'Shape of You': {
-      notes: ['C#5', 'B4', 'C#5', 'B4', 'C#5', 'B4', 'A4', 'B4', 'C#5', 'B4', 'C#5', 'B4', 'A4', 'G#4', 'F#4'],
-      timing: [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800]
+    'Let It Be': {
+      // Beatles
+      notes: ['C4', 'G4', 'A4', 'G4', 'F4', 'C4', 'D4', 'C4', 'C4', 'G4', 'A4', 'G4', 'F4', 'G4', 'C4'],
+      timing: [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200]
+    },
+    'Pirates Caribbean': {
+      // Pirates of the Caribbean theme
+      notes: ['A4', 'C5', 'D5', 'D5', 'D5', 'E5', 'F5', 'F5', 'F5', 'G5', 'E5', 'E5', 'D5', 'C5', 'C5', 'D5'],
+      timing: [0, 200, 400, 600, 700, 800, 1000, 1200, 1300, 1400, 1600, 1700, 1900, 2100, 2200, 2400]
+    },
+    'Imperial March': {
+      // Star Wars Darth Vader Theme
+      notes: ['A4', 'A4', 'A4', 'F4', 'C5', 'A4', 'F4', 'C5', 'A4', 'E5', 'E5', 'E5', 'F5', 'C5', 'G4', 'F4', 'C5', 'A4'],
+      timing: [0, 400, 800, 1000, 1200, 1600, 1800, 2000, 2400, 3200, 3600, 4000, 4200, 4400, 4800, 5000, 5200, 5600]
+    },
+    'Bohemian Rhapsody': {
+      // Queen - Intro
+      notes: ['B4', 'C5', 'D5', 'C5', 'B4', 'A4', 'G4', 'A4', 'B4', 'B4', 'A4', 'G4', 'F#4', 'G4'],
+      timing: [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900]
     },
     'Fur Elise': {
+      // Beethoven
       notes: ['E5', 'D#5', 'E5', 'D#5', 'E5', 'B4', 'D5', 'C5', 'A4', 'C4', 'E4', 'A4', 'B4', 'E4', 'G#4', 'B4', 'C5'],
       timing: [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 2000, 2200, 2400, 2600, 2800, 3000, 3200, 3400]
+    },
+    'Mario Theme': {
+      // Super Mario Bros
+      notes: ['E5', 'E5', 'E5', 'C5', 'E5', 'G5', 'G4', 'C5', 'G4', 'E4', 'A4', 'B4', 'A#4', 'A4'],
+      timing: [0, 200, 400, 600, 800, 1200, 1800, 2400, 2800, 3200, 3600, 4000, 4200, 4600]
     },
     'Happy Birthday': {
       notes: ['C4', 'C4', 'D4', 'C4', 'F4', 'E4', 'C4', 'C4', 'D4', 'C4', 'G4', 'F4'],
       timing: [0, 200, 400, 800, 1200, 1600, 2000, 2200, 2400, 2800, 3200, 3600]
-    },
-    'Twinkle Twinkle': {
-      notes: ['C4', 'C4', 'G4', 'G4', 'A4', 'A4', 'G4', 'F4', 'F4', 'E4', 'E4', 'D4', 'D4', 'C4'],
-      timing: [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900]
-    },
-    'Jingle Bells': {
-      notes: ['E4', 'E4', 'E4', 'E4', 'E4', 'E4', 'E4', 'G4', 'C4', 'D4', 'E4'],
-      timing: [0, 300, 600, 1000, 1300, 1600, 2000, 2300, 2600, 2900, 3200]
     }
   };
 
-  // Piano function
-  const playNote = (note: string, duration: number = 0.5) => {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+  // Piano function - Fixed to work properly
+  const playNote = async (note: string, duration: number = 0.5) => {
+    try {
+      // Resume audio context if suspended (browser autoplay policy)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
 
-    oscillator.frequency.value = frequencies[note];
-    oscillator.type = 'sine';
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
 
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+      oscillator.frequency.value = frequencies[note];
+      oscillator.type = 'sine';
 
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + duration);
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
+    } catch (error) {
+      console.error('Error playing note:', error);
+    }
   };
 
   // Play song function
