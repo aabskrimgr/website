@@ -104,12 +104,10 @@ export default function Navbar() {
 
   const scrollToMusicZone = (e: React.MouseEvent) => {
     e.preventDefault();
-    const funZoneSection = document.getElementById('fun-zone');
-    if (funZoneSection) {
+    const musicZoneSection = document.getElementById('music-zone');
+    if (musicZoneSection) {
       const navbarHeight = 80;
-      // Scroll to Fun Zone section and then scroll a bit more to reach music
-      const musicOffset = 800; // Approximate offset to music section within Fun Zone
-      const targetPosition = funZoneSection.offsetTop - navbarHeight + musicOffset;
+      const targetPosition = musicZoneSection.offsetTop - navbarHeight;
       window.scrollTo({
         top: targetPosition,
         behavior: 'smooth'
