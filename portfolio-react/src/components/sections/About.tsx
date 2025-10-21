@@ -11,9 +11,9 @@ export default function About() {
   // Skills based on GitHub projects
   const technicalSkills = [
     'Arduino', 'C/C++', 'Python', 'Embedded Systems',
-    'PID Control', 'Sensor Integration', 'Motor Control',
+    'PID Control', 'Sensor Integration', 'DC Motor Drivers',
     'IoT Development', 'ESP32/ESP8266', 'Robotics',
-    'Computer Vision', 'Pathfinding Algorithms', 'PCB Design',
+    'Computer Vision', 'Maze Solving', 'PCB Design',
     'React', 'JavaScript', 'HTML/CSS'
   ];
 
