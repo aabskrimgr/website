@@ -74,10 +74,10 @@ export default function About() {
             </h3>
             <div className="w-20 h-1 bg-gradient-to-r from-primary-500 to-pink-500 mb-6"></div>
             <h5 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              IoT Engineer / Robotics Developer
+              Computer Engineering Student & Robotics Enthusiast
             </h5>
             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              I am a Computer Engineering student from Nepal passionate about IoT solutions, autonomous robotics, and embedded systems. I love building intelligent systems that solve real-world problems.
+              I'm a third-year Computer Engineering student from Nepal with a passion for IoT solutions, autonomous robotics, and embedded systems. I love building intelligent systems that solve real-world problems and bringing innovative ideas to life through technology.
             </p>
           </motion.div>
 
