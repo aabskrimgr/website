@@ -1377,26 +1377,14 @@ export default function FunZone() {
             />
             
             {/* Header Section with Audio Visualizer */}
+            {/* Music Zone Header */}
             <div className="text-center mb-10">
-              <motion.div
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-                className="inline-block"
-              >
-                <div className="relative bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white px-8 py-4 rounded-full text-2xl font-bold shadow-lg mb-4 flex items-center gap-3 overflow-hidden">
-                  {/* Animated background shimmer */}
-                  <motion.div
-                    animate={{ x: ['-100%', '100%'] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  />
-                  <span className="text-3xl animate-pulse relative z-10">🎵</span>
-                  <span className="relative z-10">Music Lounge</span>
-                  <span className="text-3xl animate-pulse relative z-10">🎧</span>
-                </div>
-              </motion.div>
+              <h3 className="text-3xl md:text-4xl font-bold mb-3 flex items-center justify-center gap-3">
+                <span className="text-3xl">🎵</span>
+                <span className="text-gray-900 dark:text-white">Music </span>
+                <span className="gradient-text">Lounge</span>
+                <span className="text-3xl">🎧</span>
+              </h3>
               <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl mx-auto">
                 Curated playlists to enhance your focus, creativity, and relaxation
               </p>
