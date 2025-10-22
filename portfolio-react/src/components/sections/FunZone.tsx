@@ -17,6 +17,7 @@ export default function FunZone() {
         if (response.ok) {
           const data = await response.json();
           setGlobalHighScore(data.highScore || 0);
+          setGlobalHighScorePlayer(data.playerName || '');
         }
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error);
@@ -43,7 +44,10 @@ export default function FunZone() {
   const [snakeGameStarted, setSnakeGameStarted] = useState(false);
   const [snakeSpeed, setSnakeSpeed] = useState(150);
   const [globalHighScore, setGlobalHighScore] = useState(0);
+  const [globalHighScorePlayer, setGlobalHighScorePlayer] = useState('');
   const [isNewRecord, setIsNewRecord] = useState(false);
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [pendingScore, setPendingScore] = useState(0);
 
   // Simple Chess state (8x8 board)
   const initialChessBoard = [
@@ -299,23 +303,52 @@ export default function FunZone() {
   };
 
   // Snake Game functions
-  const submitScore = async (score: number) => {
+  const submitScore = async (score: number, playerName?: string) => {
     try {
+      // Check if score is high enough to be a record
+      if (score <= globalHighScore) return;
+
+      // Get saved name from localStorage or prompt for it
+      let name = playerName;
+      if (!name) {
+        name = localStorage.getItem('snakePlayerName') || '';
+      }
+      
+      if (!name) {
+        // Prompt for name if not saved
+        setPendingScore(score);
+        setShowNamePrompt(true);
+        return;
+      }
+
+      // Submit score with name
       const response = await fetch('/api/snake-leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ score, playerName: 'Visitor' }),
+        body: JSON.stringify({ score, playerName: name }),
       });
+      
       if (response.ok) {
         const data = await response.json();
         if (data.isNewRecord) {
           setIsNewRecord(true);
           setGlobalHighScore(score);
+          setGlobalHighScorePlayer(name);
+          // Save name to localStorage for future use
+          localStorage.setItem('snakePlayerName', name);
         }
       }
     } catch (error) {
       console.error('Failed to submit score:', error);
     }
+  };
+
+  const handleNameSubmit = (name: string) => {
+    setShowNamePrompt(false);
+    if (name.trim()) {
+      submitScore(pendingScore, name.trim());
+    }
+    setPendingScore(0);
   };
 
   const startSnakeGame = () => {
@@ -978,15 +1011,20 @@ export default function FunZone() {
                   {globalHighScore}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                  🏆 World Record
+                  🏆 Record High
                 </div>
+                {globalHighScorePlayer && (
+                  <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mt-1">
+                    {globalHighScorePlayer}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* New Record Notification */}
             {isNewRecord && (
               <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-lg text-center font-bold animate-pulse">
-                🎉 NEW WORLD RECORD! 🎉
+                🎉 NEW RECORD HIGH! 🎉
               </div>
             )}
 
@@ -1111,6 +1149,53 @@ export default function FunZone() {
                 </div>
               )}
             </div>
+
+            {/* Name Prompt Modal */}
+            {showNamePrompt && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-2xl">
+                  <h3 className="text-2xl font-bold text-center mb-4 text-gray-900 dark:text-white">
+                    🎉 New Record High! 🎉
+                  </h3>
+                  <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
+                    You scored <span className="font-bold text-green-600">{pendingScore}</span> points!<br />
+                    Enter your name for the leaderboard:
+                  </p>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.elements.namedItem('playerName') as HTMLInputElement;
+                    handleNameSubmit(input.value);
+                  }}>
+                    <input
+                      type="text"
+                      name="playerName"
+                      autoFocus
+                      maxLength={20}
+                      placeholder="Your name"
+                      className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-green-600 focus:outline-none mb-4"
+                    />
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNamePrompt(false);
+                          setPendingScore(0);
+                        }}
+                        className="flex-1 px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-bold hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                      >
+                        Skip
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-bold hover:shadow-xl transition-all"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Tic-Tac-Toe Game */}
