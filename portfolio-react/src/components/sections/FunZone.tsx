@@ -9,6 +9,23 @@ export default function FunZone() {
     threshold: 0.1,
   });
 
+  // Fetch global high score on mount
+  useEffect(() => {
+    const fetchGlobalHighScore = async () => {
+      try {
+        const response = await fetch('/api/snake-leaderboard');
+        if (response.ok) {
+          const data = await response.json();
+          setGlobalHighScore(data.highScore || 0);
+          setGlobalHighScorePlayer(data.playerName || 'Anonymous');
+        }
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error);
+      }
+    };
+    fetchGlobalHighScore();
+  }, []);
+
   const [board, setBoard] = useState(Array(9).fill(null));
   const [winner, setWinner] = useState<string | null>(null);
   const [playerScore, setPlayerScore] = useState(0);
@@ -26,6 +43,9 @@ export default function FunZone() {
   const [snakeHighScore, setSnakeHighScore] = useState(0);
   const [snakeGameStarted, setSnakeGameStarted] = useState(false);
   const [snakeSpeed, setSnakeSpeed] = useState(150);
+  const [globalHighScore, setGlobalHighScore] = useState(0);
+  const [globalHighScorePlayer, setGlobalHighScorePlayer] = useState('Anonymous');
+  const [isNewRecord, setIsNewRecord] = useState(false);
 
   // Simple Chess state (8x8 board)
   const initialChessBoard = [
@@ -111,6 +131,7 @@ export default function FunZone() {
         if (newHead[0] < 0 || newHead[0] >= SNAKE_ROWS || newHead[1] < 0 || newHead[1] >= SNAKE_COLS) {
           setSnakeGameOver(true);
           if (snakeScore > snakeHighScore) setSnakeHighScore(snakeScore);
+          submitScore(snakeScore);
           return prevSnake;
         }
 
@@ -118,6 +139,7 @@ export default function FunZone() {
         if (newSnake.some(segment => segment[0] === newHead[0] && segment[1] === newHead[1])) {
           setSnakeGameOver(true);
           if (snakeScore > snakeHighScore) setSnakeHighScore(snakeScore);
+          submitScore(snakeScore);
           return prevSnake;
         }
 
@@ -279,6 +301,26 @@ export default function FunZone() {
   };
 
   // Snake Game functions
+  const submitScore = async (score: number) => {
+    try {
+      const response = await fetch('/api/snake-leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score, playerName: 'Visitor' }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isNewRecord) {
+          setIsNewRecord(true);
+          setGlobalHighScore(score);
+          setGlobalHighScorePlayer('Visitor');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to submit score:', error);
+    }
+  };
+
   const startSnakeGame = () => {
     setSnake([[10, 10], [10, 9], [10, 8]]);
     setFood([10, 14]); // Away from right border
@@ -287,6 +329,7 @@ export default function FunZone() {
     setSnakeScore(0);
     setSnakeSpeed(150);
     setSnakeGameStarted(true);
+    setIsNewRecord(false);
   };
 
   // Get piece value for scoring
@@ -931,9 +974,24 @@ export default function FunZone() {
                 <div className="text-2xl font-bold text-yellow-600">
                   {snakeHighScore}
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">High Score</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Your Best</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {globalHighScore}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  🏆 World Record
+                </div>
               </div>
             </div>
+
+            {/* New Record Notification */}
+            {isNewRecord && (
+              <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-lg text-center font-bold animate-pulse">
+                🎉 NEW WORLD RECORD! 🎉
+              </div>
+            )}
 
             {/* Snake Game Board */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-3 mb-4 border-4 border-green-600/30 shadow-lg shadow-green-600/20">
