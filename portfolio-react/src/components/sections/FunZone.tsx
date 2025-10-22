@@ -17,7 +17,6 @@ export default function FunZone() {
         if (response.ok) {
           const data = await response.json();
           setGlobalHighScore(data.highScore || 0);
-          setGlobalHighScorePlayer(data.playerName || 'Anonymous');
         }
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error);
@@ -44,7 +43,6 @@ export default function FunZone() {
   const [snakeGameStarted, setSnakeGameStarted] = useState(false);
   const [snakeSpeed, setSnakeSpeed] = useState(150);
   const [globalHighScore, setGlobalHighScore] = useState(0);
-  const [globalHighScorePlayer, setGlobalHighScorePlayer] = useState('Anonymous');
   const [isNewRecord, setIsNewRecord] = useState(false);
 
   // Simple Chess state (8x8 board)
@@ -313,7 +311,6 @@ export default function FunZone() {
         if (data.isNewRecord) {
           setIsNewRecord(true);
           setGlobalHighScore(score);
-          setGlobalHighScorePlayer('Visitor');
         }
       }
     } catch (error) {
