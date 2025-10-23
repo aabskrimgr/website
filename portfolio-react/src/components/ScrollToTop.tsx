@@ -29,7 +29,7 @@ export default function ScrollToTop() {
     };
   }, []);
 
-  // Only show the floating button on desktop (lg and up = 1024px)
+  // Check if desktop for different button sizes
   useEffect(() => {
     const checkDesktop = () => {
       // Use window.innerWidth for immediate response
@@ -64,7 +64,7 @@ export default function ScrollToTop() {
 
       {/* Scroll to Top Button */}
       <AnimatePresence>
-        {isVisible && isDesktop && (
+        {isVisible && (
           <motion.button
             initial={{ opacity: 0, scale: 0, y: 100 }}
             animate={{ 
@@ -80,15 +80,19 @@ export default function ScrollToTop() {
             exit={{ opacity: 0, scale: 0, y: 100 }}
             whileHover={{ 
               scale: 1.15,
-              rotate: 360,
+              rotate: isDesktop ? 360 : 0,
               transition: { duration: 0.5 }
             }}
             whileTap={{ scale: 0.9 }}
             onClick={scrollToTop}
-            className="hidden lg:flex fixed bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-primary-500/50 transition-shadow duration-300 group cursor-pointer"
+            className={`fixed z-50 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-primary-500/50 transition-shadow duration-300 group cursor-pointer ${
+              isDesktop 
+                ? 'bottom-8 right-8 p-4' 
+                : 'bottom-20 right-4 p-3'
+            }`}
             aria-label="Scroll to top"
           >
-            <FaArrowUp className="text-2xl" />
+            <FaArrowUp className={isDesktop ? 'text-2xl' : 'text-xl'} />
           </motion.button>
         )}
       </AnimatePresence>
