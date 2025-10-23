@@ -1,0 +1,29 @@
+# Quick Setup: Add These to Netlify
+
+Go to: https://app.netlify.com/sites/YOUR_SITE/settings/deploys#environment
+
+Click "Add a variable" for each of these:
+
+```
+Variable name: PUSHER_APP_ID
+Value: 2067592
+```
+
+```
+Variable name: PUSHER_KEY
+Value: 2a33370c77c42dc75b2c
+```
+
+```
+Variable name: PUSHER_SECRET
+Value: a98aa0a231b5e4d547a7
+```
+
+```
+Variable name: PUSHER_CLUSTER
+Value: ap1
+```
+
+After adding all 4, click: **Deploys** → **Trigger deploy** → **Clear cache and deploy site**
+
+This will enable the online chess feature! 🎮♟️
