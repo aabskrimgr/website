@@ -64,12 +64,18 @@ export default async (req, context) => {
 
       // Join matchmaking queue
       if (action === 'findMatch') {
+        console.log('=== MATCHMAKING REQUEST ===');
+        console.log('Player ID:', playerId);
+        console.log('Player Name:', playerName);
+        
         // Get waiting players
         let waitingPlayers = await store.get('waiting-players', { type: 'json' }) || [];
+        console.log('Current waiting players:', waitingPlayers.length, waitingPlayers);
         
         // Check if this player is already waiting
         const existingPlayer = waitingPlayers.find(p => p.id === playerId);
         if (existingPlayer) {
+          console.log('Player already in queue');
           return new Response(JSON.stringify({ 
             status: 'waiting',
             message: 'Already in queue'
@@ -78,12 +84,19 @@ export default async (req, context) => {
 
         // If there's someone waiting, match them
         if (waitingPlayers.length > 0) {
+          console.log('MATCH FOUND! Pairing players...');
           const opponent = waitingPlayers.shift(); // Take first player
           const gameId = `game-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          console.log('Opponent:', opponent);
+          console.log('Game ID:', gameId);
           
           // Randomly assign colors
           const whitePlayer = Math.random() > 0.5 ? playerId : opponent.id;
           const blackPlayer = whitePlayer === playerId ? opponent.id : playerId;
+          
+          console.log('White player:', whitePlayer);
+          console.log('Black player:', blackPlayer);
           
           // Create game
           const gameData = {
@@ -105,26 +118,36 @@ export default async (req, context) => {
 
           await store.setJSON(gameId, gameData);
           await store.setJSON('waiting-players', waitingPlayers);
+          
+          console.log('Game saved, sending Pusher notifications...');
 
           // Notify both players via Pusher
-          await pusher.trigger(`player-${playerId}`, 'match-found', {
-            gameId,
-            color: whitePlayer === playerId ? 'white' : 'black',
-            opponent: whitePlayer === playerId ? opponent.name : playerName
-          });
+          try {
+            await pusher.trigger(`player-${playerId}`, 'match-found', {
+              gameId,
+              color: whitePlayer === playerId ? 'white' : 'black',
+              opponent: whitePlayer === playerId ? opponent.name : playerName
+            });
+            console.log('Notified player 1:', playerId);
 
-          await pusher.trigger(`player-${opponent.id}`, 'match-found', {
-            gameId,
-            color: whitePlayer === opponent.id ? 'white' : 'black',
-            opponent: whitePlayer === opponent.id ? playerName : opponent.name
-          });
+            await pusher.trigger(`player-${opponent.id}`, 'match-found', {
+              gameId,
+              color: whitePlayer === opponent.id ? 'white' : 'black',
+              opponent: whitePlayer === opponent.id ? playerName : opponent.name
+            });
+            console.log('Notified player 2:', opponent.id);
+          } catch (pusherError) {
+            console.error('Pusher notification error:', pusherError);
+          }
 
+          console.log('=== MATCH COMPLETE ===');
           return new Response(JSON.stringify({
             status: 'matched',
             gameId,
             color: whitePlayer === playerId ? 'white' : 'black'
           }), { status: 200, headers });
         } else {
+          console.log('No players waiting, adding to queue');
           // Add player to waiting queue
           waitingPlayers.push({
             id: playerId,
@@ -132,6 +155,9 @@ export default async (req, context) => {
             joinedAt: Date.now()
           });
           await store.setJSON('waiting-players', waitingPlayers);
+          
+          console.log('Player added to queue. Total waiting:', waitingPlayers.length);
+          console.log('=== END ===');
 
           return new Response(JSON.stringify({
             status: 'waiting',
