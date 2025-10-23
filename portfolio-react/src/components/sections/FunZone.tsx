@@ -669,6 +669,16 @@ export default function FunZone() {
       const responseData = await response.json();
       console.log('Move API response data:', responseData);
 
+      if (!response.ok) {
+        console.error('❌ Move failed:', responseData.error);
+        console.error('Error details:', responseData.details);
+        if (responseData.stack) {
+          console.error('Stack trace:', responseData.stack);
+        }
+        setChessMessage(`Move failed: ${responseData.error || 'Unknown error'}`);
+        return;
+      }
+
       // Update local state - keep it in MY perspective (flipped if black)
       setChessBoard(newBoard);
       setLastMove([from, to]);
