@@ -452,20 +452,25 @@ export default function FunZone() {
       gameChannel.bind('move-made', (moveData: any) => {
         console.log('Move received:', moveData);
         console.log('My color in move handler:', myColor);
+        console.log('Received move notation:', moveData.move.notation);
         console.log('Received board:', moveData.move.newBoard);
         
-        // Flip board for black player
+        // Convert chess notation to coordinates for display
+        const [fromRow, fromCol] = chessNotationToCoords(moveData.move.notation.split('-')[0]);
+        const [toRow, toCol] = chessNotationToCoords(moveData.move.notation.split('-')[1]);
+        
+        // For black player, flip the visual coordinates for highlighting
+        if (myColor === 'black') {
+          setLastMove([[7 - fromRow, 7 - fromCol], [7 - toRow, 7 - toCol]]);
+        } else {
+          setLastMove([[fromRow, fromCol], [toRow, toCol]]);
+        }
+        
+        // Always use the board from server (already in standard orientation)
+        // Flip only for display if black player
         const board = myColor === 'black' ? flipBoardForBlack(moveData.move.newBoard) : moveData.move.newBoard;
         console.log('Display board (flipped for black):', board);
         setChessBoard(board);
-        
-        // Also flip the move coordinates for black player
-        if (myColor === 'black') {
-          setLastMove([[7 - moveData.move.from[0], 7 - moveData.move.from[1]], 
-                       [7 - moveData.move.to[0], 7 - moveData.move.to[1]]]);
-        } else {
-          setLastMove([moveData.move.from, moveData.move.to]);
-        }
         
         setCurrentTurn(moveData.currentTurn);
         
@@ -495,6 +500,23 @@ export default function FunZone() {
       playerChannel.unsubscribe();
     };
   }, [pusherClient, onlinePlayerId, onlinePlayerColor]);
+
+  // Helper function to convert coordinates to chess notation (e.g., [0,0] -> "a8", [7,7] -> "h1")
+  const coordsToChessNotation = (row: number, col: number): string => {
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const rank = 8 - row; // Row 0 is rank 8, row 7 is rank 1
+    return `${files[col]}${rank}`;
+  };
+
+  // Helper function to convert chess notation to coordinates (e.g., "a8" -> [0,0], "h1" -> [7,7])
+  const chessNotationToCoords = (notation: string): [number, number] => {
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const file = notation[0];
+    const rank = parseInt(notation[1]);
+    const col = files.indexOf(file);
+    const row = 8 - rank;
+    return [row, col];
+  };
 
   // Helper function to flip board for black player
   const flipBoardForBlack = (board: string[][]): string[][] => {
@@ -580,19 +602,28 @@ export default function FunZone() {
     console.log('=== MAKING ONLINE MOVE ===');
     console.log('My color:', onlinePlayerColor);
     console.log('From:', from, 'To:', to);
-    console.log('Current board (my view):', newBoard);
 
     try {
       const piece = chessBoard[from[0]][from[1]];
       const winner = checkWinner(newBoard);
 
-      // Black player sees flipped board, so unflip coordinates and board for server
-      const serverFrom = onlinePlayerColor === 'black' ? [7 - from[0], 7 - from[1]] as [number, number] : from;
-      const serverTo = onlinePlayerColor === 'black' ? [7 - to[0], 7 - to[1]] as [number, number] : to;
-      const serverBoard = onlinePlayerColor === 'black' ? flipBoardForBlack(newBoard) : newBoard;
+      // Convert visual coordinates to actual board coordinates
+      // Black player's board is flipped, so we need to unflip for the server
+      let actualFrom = from;
+      let actualTo = to;
+      let actualBoard = newBoard;
+      
+      if (onlinePlayerColor === 'black') {
+        actualFrom = [7 - from[0], 7 - from[1]] as [number, number];
+        actualTo = [7 - to[0], 7 - to[1]] as [number, number];
+        actualBoard = flipBoardForBlack(newBoard);
+      }
 
-      console.log('Server coordinates - From:', serverFrom, 'To:', serverTo);
-      console.log('Server board:', serverBoard);
+      // Convert to chess notation (universal format)
+      const notation = `${coordsToChessNotation(actualFrom[0], actualFrom[1])}-${coordsToChessNotation(actualTo[0], actualTo[1])}`;
+      
+      console.log('Chess notation:', notation);
+      console.log('Sending board to server:', actualBoard);
 
       const response = await fetch('/api/chess-matchmaking', {
         method: 'POST',
@@ -602,10 +633,11 @@ export default function FunZone() {
           gameId: onlineGameId,
           playerId: onlinePlayerId,
           move: {
-            from: serverFrom,
-            to: serverTo,
+            notation: notation, // e.g., "e2-e4"
+            from: actualFrom,
+            to: actualTo,
             piece,
-            newBoard: serverBoard,
+            newBoard: actualBoard,
             winner
           }
         }),

@@ -215,6 +215,7 @@ export default async (req, context) => {
         gameData.board = move.newBoard;
         gameData.currentTurn = playerColor === 'white' ? 'black' : 'white';
         gameData.moves.push({
+          notation: move.notation, // e.g., "e2-e4"
           from: move.from,
           to: move.to,
           piece: move.piece,
@@ -229,6 +230,7 @@ export default async (req, context) => {
         await store.setJSON(gameId, gameData);
 
         console.log('Sending move notification...');
+        console.log('Move notation:', move.notation);
         console.log('Player color:', playerColor);
         console.log('Board being sent:', gameData.board);
         console.log('Current turn after move:', gameData.currentTurn);
