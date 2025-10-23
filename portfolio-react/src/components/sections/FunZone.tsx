@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { FaGamepad } from 'react-icons/fa';
+import Pusher from 'pusher-js';
 
 export default function FunZone() {
   const [ref, inView] = useInView({
@@ -65,11 +66,20 @@ export default function FunZone() {
   const [chessMessage, setChessMessage] = useState<string>('Your turn! (White pieces)');
   const [lastMove, setLastMove] = useState<[[number, number], [number, number]] | null>(null);
   const [gameOver, setGameOver] = useState(false);
-  const [chessMode, setChessMode] = useState<'1-player' | '2-player'>('1-player');
+  const [chessMode, setChessMode] = useState<'1-player' | '2-player' | 'online'>('1-player');
   const [whiteScore, setWhiteScore] = useState(0);
   const [blackScore, setBlackScore] = useState(0);
   const [currentTurn, setCurrentTurn] = useState<'white' | 'black'>('white');
   const [validMoves, setValidMoves] = useState<[number, number][]>([]);
+  
+  // Online chess states
+  const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
+  const [onlinePlayerColor, setOnlinePlayerColor] = useState<'white' | 'black' | null>(null);
+  const [onlineOpponentName, setOnlineOpponentName] = useState<string>('');
+  const [onlinePlayerId] = useState<string>(`player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [matchmakingStatus, setMatchmakingStatus] = useState<'idle' | 'searching' | 'matched'>('idle');
+  const [pusherClient, setPusherClient] = useState<Pusher | null>(null);
+  
   // Castling rights tracking
   const [castlingRights, setCastlingRights] = useState({
     whiteKingMoved: false,
@@ -349,6 +359,185 @@ export default function FunZone() {
       submitScore(pendingScore, name.trim());
     }
     setPendingScore(0);
+  };
+
+  // Online Chess Functions
+  useEffect(() => {
+    // Initialize Pusher when component mounts
+    if (!pusherClient) {
+      const pusher = new Pusher(import.meta.env.VITE_PUSHER_KEY || '', {
+        cluster: import.meta.env.VITE_PUSHER_CLUSTER || 'us2',
+      });
+      setPusherClient(pusher);
+    }
+
+    return () => {
+      if (pusherClient) {
+        pusherClient.disconnect();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pusherClient || !onlinePlayerId) return;
+
+    // Subscribe to player's channel for match notifications
+    const playerChannel = pusherClient.subscribe(`player-${onlinePlayerId}`);
+    
+    playerChannel.bind('match-found', (data: any) => {
+      setOnlineGameId(data.gameId);
+      setOnlinePlayerColor(data.color);
+      setOnlineOpponentName(data.opponent);
+      setMatchmakingStatus('matched');
+      setChessMessage(`Matched! You're playing as ${data.color}. ${data.color === 'white' ? 'Your turn!' : 'Opponent\'s turn'}`);
+      
+      // Subscribe to game channel
+      const gameChannel = pusherClient.subscribe(`game-${data.gameId}`);
+      
+      gameChannel.bind('move-made', (moveData: any) => {
+        setChessBoard(moveData.move.newBoard);
+        setLastMove([moveData.move.from, moveData.move.to]);
+        setCurrentTurn(moveData.currentTurn);
+        
+        if (moveData.winner) {
+          setGameOver(true);
+          const youWon = (moveData.winner === 'white' && onlinePlayerColor === 'white') || 
+                        (moveData.winner === 'black' && onlinePlayerColor === 'black');
+          setChessMessage(youWon ? '🎉 You won!' : '😔 You lost!');
+        } else {
+          setChessMessage(moveData.currentTurn === onlinePlayerColor ? 'Your turn!' : 'Opponent\'s turn');
+        }
+      });
+
+      gameChannel.bind('game-ended', (data: any) => {
+        setGameOver(true);
+        if (data.reason === 'resignation') {
+          const youWon = data.winner === onlinePlayerColor;
+          setChessMessage(youWon ? '🎉 Opponent resigned! You won!' : 'You resigned.');
+        }
+      });
+    });
+
+    return () => {
+      playerChannel.unbind_all();
+      playerChannel.unsubscribe();
+    };
+  }, [pusherClient, onlinePlayerId, onlinePlayerColor]);
+
+  const findOnlineMatch = async () => {
+    setMatchmakingStatus('searching');
+    setChessMessage('Searching for opponent...');
+    
+    const playerName = localStorage.getItem('snakePlayerName') || 'Player';
+    
+    try {
+      const response = await fetch('/api/chess-matchmaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'findMatch',
+          playerId: onlinePlayerId,
+          playerName: playerName
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'matched') {
+        // Match found immediately
+        setOnlineGameId(data.gameId);
+        setOnlinePlayerColor(data.color);
+        setMatchmakingStatus('matched');
+        // Opponent name will come via Pusher
+      } else if (data.status === 'waiting') {
+        // Still waiting
+        setChessMessage('Waiting for opponent...');
+      }
+    } catch (error) {
+      console.error('Failed to find match:', error);
+      setChessMessage('Failed to connect. Try again.');
+      setMatchmakingStatus('idle');
+    }
+  };
+
+  const cancelOnlineMatch = async () => {
+    try {
+      await fetch('/api/chess-matchmaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'cancelMatch',
+          playerId: onlinePlayerId
+        }),
+      });
+      
+      setMatchmakingStatus('idle');
+      setChessMessage('Matchmaking cancelled');
+    } catch (error) {
+      console.error('Failed to cancel match:', error);
+    }
+  };
+
+  const makeOnlineMove = async (from: [number, number], to: [number, number], newBoard: string[][]) => {
+    if (!onlineGameId || chessMode !== 'online') return;
+
+    try {
+      const piece = chessBoard[from[0]][from[1]];
+      const winner = checkWinner(newBoard);
+
+      await fetch('/api/chess-matchmaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'makeMove',
+          gameId: onlineGameId,
+          playerId: onlinePlayerId,
+          move: {
+            from,
+            to,
+            piece,
+            newBoard,
+            winner
+          }
+        }),
+      });
+
+      // Update local state
+      setChessBoard(newBoard);
+      setLastMove([from, to]);
+      setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
+      setChessMessage('Opponent\'s turn');
+
+      if (winner) {
+        setGameOver(true);
+        setChessMessage(winner === onlinePlayerColor ? '🎉 You won!' : '😔 You lost!');
+      }
+    } catch (error) {
+      console.error('Failed to make online move:', error);
+      setChessMessage('Failed to send move. Try again.');
+    }
+  };
+
+  const resignOnlineGame = async () => {
+    if (!onlineGameId) return;
+
+    try {
+      await fetch('/api/chess-matchmaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'resign',
+          gameId: onlineGameId,
+          playerId: onlinePlayerId
+        }),
+      });
+
+      setGameOver(true);
+      setChessMessage('You resigned.');
+      setMatchmakingStatus('idle');
+    } catch (error) {
+      console.error('Failed to resign:', error);
+    }
   };
 
   const startSnakeGame = () => {
@@ -638,6 +827,12 @@ export default function FunZone() {
     return !isKingInCheck(board, isWhite) && !hasValidMoves(board, isWhite);
   };
 
+  const checkWinner = (board: string[][]): 'white' | 'black' | null => {
+    if (isCheckmate(board, true)) return 'black'; // Black wins
+    if (isCheckmate(board, false)) return 'white'; // White wins
+    return null;
+  };
+
   const handleChessSquareClick = (row: number, col: number) => {
     if (gameOver) return;
     
@@ -647,13 +842,18 @@ export default function FunZone() {
       const [selectedRow, selectedCol] = selectedSquare;
       const selectedPiece = chessBoard[selectedRow][selectedCol];
       
-      // In 2-player mode, check turn
-      if (chessMode === '2-player') {
+      // In 2-player or online mode, check turn
+      if (chessMode === '2-player' || chessMode === 'online') {
         if (currentTurn === 'white' && !isWhitePiece(selectedPiece)) return;
         if (currentTurn === 'black' && !isBlackPiece(selectedPiece)) return;
       }
+
+      // In online mode, also check if it's your color's turn
+      if (chessMode === 'online') {
+        if (currentTurn !== onlinePlayerColor) return;
+      }
       
-      // Try to move with rules (white in 1-player, or current turn in 2-player)
+      // Try to move with rules (white in 1-player, or current turn in 2-player/online)
       const canMove = chessMode === '1-player' 
         ? isWhitePiece(selectedPiece) 
         : (currentTurn === 'white' && isWhitePiece(selectedPiece)) || (currentTurn === 'black' && isBlackPiece(selectedPiece));
@@ -741,6 +941,12 @@ export default function FunZone() {
         setSelectedSquare(null);
         setValidMoves([]); // Clear valid moves after making a move
         
+        // Online mode - send move to server
+        if (chessMode === 'online') {
+          makeOnlineMove([selectedRow, selectedCol], [row, col], newBoard);
+          return; // Don't handle game end locally, let server handle it
+        }
+        
         // In 2-player mode
         if (chessMode === '2-player') {
           const nextTurn = currentTurn === 'white' ? 'black' : 'white';
@@ -811,8 +1017,11 @@ export default function FunZone() {
           setChessMessage('Select where to move');
         }
       } else {
-        // 2-player mode - select based on turn
+        // 2-player and online mode - select based on turn
         if (currentTurn === 'white' && isWhitePiece(piece)) {
+          // In online mode, only allow if it's your turn
+          if (chessMode === 'online' && onlinePlayerColor !== 'white') return;
+          
           for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
               if (isValidMove(chessBoard, row, col, r, c)) {
@@ -822,8 +1031,11 @@ export default function FunZone() {
           }
           setSelectedSquare([row, col]);
           setValidMoves(moves);
-          setChessMessage('White: Select where to move');
+          setChessMessage(chessMode === 'online' ? 'Your turn: Select where to move' : 'White: Select where to move');
         } else if (currentTurn === 'black' && isBlackPiece(piece)) {
+          // In online mode, only allow if it's your turn
+          if (chessMode === 'online' && onlinePlayerColor !== 'black') return;
+          
           for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
               if (isValidMove(chessBoard, row, col, r, c)) {
@@ -833,7 +1045,7 @@ export default function FunZone() {
           }
           setSelectedSquare([row, col]);
           setValidMoves(moves);
-          setChessMessage('Black: Select where to move');
+          setChessMessage(chessMode === 'online' ? 'Your turn: Select where to move' : 'Black: Select where to move');
         }
       }
     }
@@ -1345,7 +1557,9 @@ export default function FunZone() {
                   Mini Chess
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  {chessMode === '1-player' ? 'Play vs Computer' : 'Play vs Friend'}
+                  {chessMode === '1-player' ? 'Play vs Computer' : 
+                   chessMode === '2-player' ? 'Play vs Friend' :
+                   'Play Online'}
                 </p>
               </div>
             </div>
@@ -1439,7 +1653,7 @@ export default function FunZone() {
 
             {/* Mode Selection & Reset */}
             <div className="text-center space-y-3">
-              <div className="flex items-center justify-center space-x-2 mb-3">
+              <div className="flex items-center justify-center space-x-2 mb-3 flex-wrap gap-2">
                 <button
                   onClick={() => {
                     setChessMode('1-player');
@@ -1451,7 +1665,7 @@ export default function FunZone() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  1 Player
+                  🤖 vs Computer
                 </button>
                 <button
                   onClick={() => {
@@ -1464,18 +1678,83 @@ export default function FunZone() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  2 Player
+                  👥 Local 2P
+                </button>
+                <button
+                  onClick={() => {
+                    setChessMode('online');
+                    resetChess();
+                  }}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                    chessMode === 'online'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  🌐 Online
                 </button>
               </div>
+
+              {/* Online Mode Controls */}
+              {chessMode === 'online' && (
+                <div className="mb-4">
+                  {matchmakingStatus === 'idle' && (
+                    <button
+                      onClick={findOnlineMatch}
+                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    >
+                      🔍 Find Online Match
+                    </button>
+                  )}
+                  {matchmakingStatus === 'searching' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
+                        <p className="text-green-600 font-semibold">Searching for opponent...</p>
+                      </div>
+                      <button
+                        onClick={cancelOnlineMatch}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  {matchmakingStatus === 'matched' && onlineOpponentName && (
+                    <div className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 p-3 rounded-lg">
+                      <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                        🎮 Playing vs {onlineOpponentName}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-300">
+                        You're {onlinePlayerColor}
+                      </p>
+                      {!gameOver && (
+                        <button
+                          onClick={resignOnlineGame}
+                          className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-xs font-semibold hover:bg-red-600 transition-colors"
+                        >
+                          Resign
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                {chessMode === '1-player' ? 'You play as White pieces' : 'Take turns playing'}
+                {chessMode === '1-player' ? 'You play as White pieces' : 
+                 chessMode === '2-player' ? 'Take turns playing' :
+                 'Play against random players online!'}
               </p>
-              <button
-                onClick={resetChess}
-                className="px-6 py-2 bg-gradient-to-r from-amber-600 to-amber-800 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
-              >
-                Reset Game
-              </button>
+              
+              {chessMode !== 'online' && (
+                <button
+                  onClick={resetChess}
+                  className="px-6 py-2 bg-gradient-to-r from-amber-600 to-amber-800 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
+                >
+                  Reset Game
+                </button>
+              )}
             </div>
           </motion.div>
         </div>
