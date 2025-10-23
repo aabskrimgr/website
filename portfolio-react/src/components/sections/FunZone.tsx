@@ -365,9 +365,28 @@ export default function FunZone() {
   useEffect(() => {
     // Initialize Pusher when component mounts
     if (!pusherClient) {
-      const pusher = new Pusher(import.meta.env.VITE_PUSHER_KEY || '', {
-        cluster: import.meta.env.VITE_PUSHER_CLUSTER || 'us2',
+      const pusherKey = import.meta.env.VITE_PUSHER_KEY;
+      const pusherCluster = import.meta.env.VITE_PUSHER_CLUSTER || 'ap1';
+      
+      if (!pusherKey) {
+        console.error('Pusher key not found in environment variables');
+        return;
+      }
+      
+      console.log('Initializing Pusher with cluster:', pusherCluster);
+      
+      const pusher = new Pusher(pusherKey, {
+        cluster: pusherCluster,
       });
+      
+      pusher.connection.bind('connected', () => {
+        console.log('Pusher connected successfully!');
+      });
+      
+      pusher.connection.bind('error', (err: any) => {
+        console.error('Pusher connection error:', err);
+      });
+      
       setPusherClient(pusher);
     }
 
@@ -376,15 +395,26 @@ export default function FunZone() {
         pusherClient.disconnect();
       }
     };
-  }, []);
+  }, [pusherClient]);
 
   useEffect(() => {
     if (!pusherClient || !onlinePlayerId) return;
 
+    console.log('Subscribing to player channel:', `player-${onlinePlayerId}`);
+    
     // Subscribe to player's channel for match notifications
     const playerChannel = pusherClient.subscribe(`player-${onlinePlayerId}`);
     
+    playerChannel.bind('pusher:subscription_succeeded', () => {
+      console.log('Successfully subscribed to player channel');
+    });
+    
+    playerChannel.bind('pusher:subscription_error', (status: any) => {
+      console.error('Failed to subscribe to player channel:', status);
+    });
+    
     playerChannel.bind('match-found', (data: any) => {
+      console.log('Match found event received:', data);
       setOnlineGameId(data.gameId);
       setOnlinePlayerColor(data.color);
       setOnlineOpponentName(data.opponent);
@@ -392,9 +422,11 @@ export default function FunZone() {
       setChessMessage(`Matched! You're playing as ${data.color}. ${data.color === 'white' ? 'Your turn!' : 'Opponent\'s turn'}`);
       
       // Subscribe to game channel
+      console.log('Subscribing to game channel:', `game-${data.gameId}`);
       const gameChannel = pusherClient.subscribe(`game-${data.gameId}`);
       
       gameChannel.bind('move-made', (moveData: any) => {
+        console.log('Move received:', moveData);
         setChessBoard(moveData.move.newBoard);
         setLastMove([moveData.move.from, moveData.move.to]);
         setCurrentTurn(moveData.currentTurn);
@@ -410,6 +442,7 @@ export default function FunZone() {
       });
 
       gameChannel.bind('game-ended', (data: any) => {
+        console.log('Game ended:', data);
         setGameOver(true);
         if (data.reason === 'resignation') {
           const youWon = data.winner === onlinePlayerColor;
@@ -419,6 +452,7 @@ export default function FunZone() {
     });
 
     return () => {
+      console.log('Unsubscribing from player channel');
       playerChannel.unbind_all();
       playerChannel.unsubscribe();
     };
@@ -430,9 +464,12 @@ export default function FunZone() {
     
     const playerName = localStorage.getItem('snakePlayerName') || 'Player';
     
+    console.log('Starting matchmaking for player:', onlinePlayerId, 'Name:', playerName);
+    
     // Set a timeout - if no match in 30 seconds, offer to play vs computer
     const timeoutId = setTimeout(() => {
       if (matchmakingStatus === 'searching') {
+        console.log('Matchmaking timeout - no opponent found');
         setChessMessage('No opponent found. Try again or play vs computer.');
         setMatchmakingStatus('idle');
         cancelOnlineMatch();
@@ -440,6 +477,7 @@ export default function FunZone() {
     }, 30000); // 30 seconds
     
     try {
+      console.log('Calling matchmaking API...');
       const response = await fetch('/api/chess-matchmaking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -450,23 +488,27 @@ export default function FunZone() {
         }),
       });
 
+      console.log('API Response status:', response.status);
       const data = await response.json();
+      console.log('API Response data:', data);
       
       if (data.status === 'matched') {
         // Match found immediately
         clearTimeout(timeoutId);
+        console.log('Match found! Game ID:', data.gameId, 'Color:', data.color);
         setOnlineGameId(data.gameId);
         setOnlinePlayerColor(data.color);
         setMatchmakingStatus('matched');
         // Opponent name will come via Pusher
       } else if (data.status === 'waiting') {
         // Still waiting
+        console.log('Waiting in queue...');
         setChessMessage('Waiting for opponent... (30s timeout)');
       }
     } catch (error) {
       clearTimeout(timeoutId);
       console.error('Failed to find match:', error);
-      setChessMessage('Failed to connect. Try again.');
+      setChessMessage('Failed to connect. Check console for errors.');
       setMatchmakingStatus('idle');
     }
   };
