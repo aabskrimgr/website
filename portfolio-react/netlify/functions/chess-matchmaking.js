@@ -228,6 +228,11 @@ export default async (req, context) => {
 
         await store.setJSON(gameId, gameData);
 
+        console.log('Sending move notification...');
+        console.log('Player color:', playerColor);
+        console.log('Board being sent:', gameData.board);
+        console.log('Current turn after move:', gameData.currentTurn);
+
         // Notify opponent via Pusher
         const opponentId = gameData.white.id === playerId ? gameData.black.id : gameData.white.id;
         await pusher.trigger(`game-${gameId}`, 'move-made', {
@@ -236,6 +241,8 @@ export default async (req, context) => {
           status: gameData.status,
           winner: move.winner
         });
+        
+        console.log('Move notification sent to game channel');
 
         return new Response(JSON.stringify({
           status: 'success',

@@ -415,19 +415,23 @@ export default function FunZone() {
     
     playerChannel.bind('match-found', (data: any) => {
       console.log('Match found event received:', data);
+      const myColor = data.color; // Capture color in this scope
+      
       setOnlineGameId(data.gameId);
-      setOnlinePlayerColor(data.color);
+      setOnlinePlayerColor(myColor);
       setOnlineOpponentName(data.opponent);
       setMatchmakingStatus('matched');
-      setChessMessage(`Matched! You're playing as ${data.color}. ${data.color === 'white' ? 'Your turn!' : 'Opponent\'s turn'}`);
+      setChessMessage(`Matched! You're playing as ${myColor}. ${myColor === 'white' ? 'Your turn!' : 'Opponent\'s turn'}`);
       
       // Fetch initial game state and set board
       fetch(`/api/chess-matchmaking?gameId=${data.gameId}`)
         .then(res => res.json())
         .then(gameData => {
           console.log('Initial game state:', gameData);
+          console.log('My color:', myColor);
           // Flip board for black player
-          const board = data.color === 'black' ? flipBoardForBlack(gameData.board) : gameData.board;
+          const board = myColor === 'black' ? flipBoardForBlack(gameData.board) : gameData.board;
+          console.log('Setting board (flipped for black):', board);
           setChessBoard(board);
           setCurrentTurn(gameData.currentTurn);
         })
@@ -439,12 +443,16 @@ export default function FunZone() {
       
       gameChannel.bind('move-made', (moveData: any) => {
         console.log('Move received:', moveData);
+        console.log('My color in move handler:', myColor);
+        console.log('Received board:', moveData.move.newBoard);
+        
         // Flip board for black player
-        const board = onlinePlayerColor === 'black' ? flipBoardForBlack(moveData.move.newBoard) : moveData.move.newBoard;
+        const board = myColor === 'black' ? flipBoardForBlack(moveData.move.newBoard) : moveData.move.newBoard;
+        console.log('Display board (flipped for black):', board);
         setChessBoard(board);
         
         // Also flip the move coordinates for black player
-        if (onlinePlayerColor === 'black') {
+        if (myColor === 'black') {
           setLastMove([[7 - moveData.move.from[0], 7 - moveData.move.from[1]], 
                        [7 - moveData.move.to[0], 7 - moveData.move.to[1]]]);
         } else {
@@ -455,11 +463,11 @@ export default function FunZone() {
         
         if (moveData.winner) {
           setGameOver(true);
-          const youWon = (moveData.winner === 'white' && onlinePlayerColor === 'white') || 
-                        (moveData.winner === 'black' && onlinePlayerColor === 'black');
+          const youWon = (moveData.winner === 'white' && myColor === 'white') || 
+                        (moveData.winner === 'black' && myColor === 'black');
           setChessMessage(youWon ? '🎉 You won!' : '😔 You lost!');
         } else {
-          setChessMessage(moveData.currentTurn === onlinePlayerColor ? 'Your turn!' : 'Opponent\'s turn');
+          setChessMessage(moveData.currentTurn === myColor ? 'Your turn!' : 'Opponent\'s turn');
         }
       });
 
@@ -467,7 +475,7 @@ export default function FunZone() {
         console.log('Game ended:', data);
         setGameOver(true);
         if (data.reason === 'resignation') {
-          const youWon = data.winner === onlinePlayerColor;
+          const youWon = data.winner === myColor;
           setChessMessage(youWon ? '🎉 Opponent resigned! You won!' : 'You resigned.');
         }
       });
