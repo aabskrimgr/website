@@ -441,6 +441,14 @@ export default function FunZone() {
       console.log('Subscribing to game channel:', `game-${data.gameId}`);
       const gameChannel = pusherClient.subscribe(`game-${data.gameId}`);
       
+      gameChannel.bind('pusher:subscription_succeeded', () => {
+        console.log('Successfully subscribed to game channel!');
+      });
+      
+      gameChannel.bind('pusher:subscription_error', (status: any) => {
+        console.error('Failed to subscribe to game channel:', status);
+      });
+      
       gameChannel.bind('move-made', (moveData: any) => {
         console.log('Move received:', moveData);
         console.log('My color in move handler:', myColor);
@@ -569,6 +577,11 @@ export default function FunZone() {
   const makeOnlineMove = async (from: [number, number], to: [number, number], newBoard: string[][]) => {
     if (!onlineGameId || chessMode !== 'online') return;
 
+    console.log('=== MAKING ONLINE MOVE ===');
+    console.log('My color:', onlinePlayerColor);
+    console.log('From:', from, 'To:', to);
+    console.log('Current board (my view):', newBoard);
+
     try {
       const piece = chessBoard[from[0]][from[1]];
       const winner = checkWinner(newBoard);
@@ -578,7 +591,10 @@ export default function FunZone() {
       const serverTo = onlinePlayerColor === 'black' ? [7 - to[0], 7 - to[1]] as [number, number] : to;
       const serverBoard = onlinePlayerColor === 'black' ? flipBoardForBlack(newBoard) : newBoard;
 
-      await fetch('/api/chess-matchmaking', {
+      console.log('Server coordinates - From:', serverFrom, 'To:', serverTo);
+      console.log('Server board:', serverBoard);
+
+      const response = await fetch('/api/chess-matchmaking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -594,6 +610,10 @@ export default function FunZone() {
           }
         }),
       });
+
+      console.log('Move API response:', response.status);
+      const responseData = await response.json();
+      console.log('Move API response data:', responseData);
 
       // Update local state (keep flipped for black player)
       setChessBoard(newBoard);
