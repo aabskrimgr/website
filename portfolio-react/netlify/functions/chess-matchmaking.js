@@ -193,9 +193,32 @@ export default async (req, context) => {
 
       // Make a move
       if (action === 'makeMove') {
+        console.log('=== MAKE MOVE REQUEST ===');
+        console.log('Game ID:', gameId);
+        console.log('Player ID:', playerId);
+        console.log('Move:', move);
+        
+        if (!gameId) {
+          console.error('Missing gameId');
+          return new Response(JSON.stringify({ error: 'Missing gameId' }), { 
+            status: 400, 
+            headers 
+          });
+        }
+        
+        if (!playerId) {
+          console.error('Missing playerId');
+          return new Response(JSON.stringify({ error: 'Missing playerId' }), { 
+            status: 400, 
+            headers 
+          });
+        }
+        
         const gameData = await store.get(gameId, { type: 'json' });
+        console.log('Game data retrieved:', gameData ? 'found' : 'not found');
         
         if (!gameData) {
+          console.error('Game not found:', gameId);
           return new Response(JSON.stringify({ error: 'Game not found' }), { 
             status: 404, 
             headers 
@@ -204,7 +227,11 @@ export default async (req, context) => {
 
         // Verify it's the player's turn
         const playerColor = gameData.white.id === playerId ? 'white' : 'black';
+        console.log('Player color:', playerColor);
+        console.log('Current turn:', gameData.currentTurn);
+        
         if (gameData.currentTurn !== playerColor) {
+          console.error('Not player turn - current:', gameData.currentTurn, 'player:', playerColor);
           return new Response(JSON.stringify({ error: 'Not your turn' }), { 
             status: 400, 
             headers 
