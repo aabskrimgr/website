@@ -601,29 +601,31 @@ export default function FunZone() {
 
     console.log('=== MAKING ONLINE MOVE ===');
     console.log('My color:', onlinePlayerColor);
-    console.log('From:', from, 'To:', to);
+    console.log('Visual coords - From:', from, 'To:', to);
 
     try {
       const piece = chessBoard[from[0]][from[1]];
       const winner = checkWinner(newBoard);
 
-      // Convert visual coordinates to actual board coordinates
-      // Black player's board is flipped, so we need to unflip for the server
-      let actualFrom = from;
-      let actualTo = to;
-      let actualBoard = newBoard;
+      // If black player, we need to translate visual coords to actual board coords
+      // Black sees the board flipped, so visual [0,0] is actually [7,7] on the real board
+      let realFrom = from;
+      let realTo = to;
+      let realBoard = newBoard;
       
       if (onlinePlayerColor === 'black') {
-        actualFrom = [7 - from[0], 7 - from[1]] as [number, number];
-        actualTo = [7 - to[0], 7 - to[1]] as [number, number];
-        actualBoard = flipBoardForBlack(newBoard);
+        // Unflip: visual coords -> real board coords
+        realFrom = [7 - from[0], 7 - from[1]] as [number, number];
+        realTo = [7 - to[0], 7 - to[1]] as [number, number];
+        // Unflip the board back to standard orientation for server
+        realBoard = flipBoardForBlack(newBoard);
       }
 
-      // Convert to chess notation (universal format)
-      const notation = `${coordsToChessNotation(actualFrom[0], actualFrom[1])}-${coordsToChessNotation(actualTo[0], actualTo[1])}`;
+      // Convert to chess notation using REAL board coordinates
+      const notation = `${coordsToChessNotation(realFrom[0], realFrom[1])}-${coordsToChessNotation(realTo[0], realTo[1])}`;
       
+      console.log('Real board coords - From:', realFrom, 'To:', realTo);
       console.log('Chess notation:', notation);
-      console.log('Sending board to server:', actualBoard);
 
       const response = await fetch('/api/chess-matchmaking', {
         method: 'POST',
@@ -633,11 +635,11 @@ export default function FunZone() {
           gameId: onlineGameId,
           playerId: onlinePlayerId,
           move: {
-            notation: notation, // e.g., "e2-e4"
-            from: actualFrom,
-            to: actualTo,
+            notation: notation,
+            from: realFrom,  // Real board coordinates
+            to: realTo,      // Real board coordinates
             piece,
-            newBoard: actualBoard,
+            newBoard: realBoard,  // Real board state (white perspective)
             winner
           }
         }),
@@ -647,7 +649,7 @@ export default function FunZone() {
       const responseData = await response.json();
       console.log('Move API response data:', responseData);
 
-      // Update local state (keep flipped for black player)
+      // Update local state - keep it in MY perspective (flipped if black)
       setChessBoard(newBoard);
       setLastMove([from, to]);
       setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
