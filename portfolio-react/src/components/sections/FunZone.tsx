@@ -452,12 +452,12 @@ export default function FunZone() {
       gameChannel.bind('move-made', (moveData: any) => {
         console.log('Move received:', moveData);
         console.log('My color in move handler:', myColor);
-        console.log('Received move notation:', moveData.move.notation);
-        console.log('Received board:', moveData.move.newBoard);
+        console.log('Received move notation:', moveData.notation);
+        console.log('Received board (server/white perspective):', moveData.board);
         
         // Convert chess notation to coordinates for display
-        const [fromRow, fromCol] = chessNotationToCoords(moveData.move.notation.split('-')[0]);
-        const [toRow, toCol] = chessNotationToCoords(moveData.move.notation.split('-')[1]);
+        const [fromRow, fromCol] = chessNotationToCoords(moveData.notation.split('-')[0]);
+        const [toRow, toCol] = chessNotationToCoords(moveData.notation.split('-')[1]);
         
         // For black player, flip the visual coordinates for highlighting
         if (myColor === 'black') {
@@ -466,10 +466,10 @@ export default function FunZone() {
           setLastMove([[fromRow, fromCol], [toRow, toCol]]);
         }
         
-        // Always use the board from server (already in standard orientation)
-        // Flip only for display if black player
-        const board = myColor === 'black' ? flipBoardForBlack(moveData.move.newBoard) : moveData.move.newBoard;
-        console.log('Display board (flipped for black):', board);
+        // Server board is always in white perspective
+        // Black player needs to flip it for display
+        const board = myColor === 'black' ? flipBoardForBlack(moveData.board) : moveData.board;
+        console.log('Display board (my perspective):', board);
         setChessBoard(board);
         
         setCurrentTurn(moveData.currentTurn);

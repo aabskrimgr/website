@@ -235,10 +235,13 @@ export default async (req, context) => {
         console.log('Board being sent:', gameData.board);
         console.log('Current turn after move:', gameData.currentTurn);
 
-        // Notify opponent via Pusher
+        // Notify opponent via Pusher - send the CURRENT board state, not the move's board
         const opponentId = gameData.white.id === playerId ? gameData.black.id : gameData.white.id;
         await pusher.trigger(`game-${gameId}`, 'move-made', {
-          move: move,
+          notation: move.notation,
+          board: gameData.board,  // Send current server board state
+          from: move.from,
+          to: move.to,
           currentTurn: gameData.currentTurn,
           status: gameData.status,
           winner: move.winner
