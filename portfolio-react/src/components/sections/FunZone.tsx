@@ -421,14 +421,36 @@ export default function FunZone() {
       setMatchmakingStatus('matched');
       setChessMessage(`Matched! You're playing as ${data.color}. ${data.color === 'white' ? 'Your turn!' : 'Opponent\'s turn'}`);
       
+      // Fetch initial game state and set board
+      fetch(`/api/chess-matchmaking?gameId=${data.gameId}`)
+        .then(res => res.json())
+        .then(gameData => {
+          console.log('Initial game state:', gameData);
+          // Flip board for black player
+          const board = data.color === 'black' ? flipBoardForBlack(gameData.board) : gameData.board;
+          setChessBoard(board);
+          setCurrentTurn(gameData.currentTurn);
+        })
+        .catch(err => console.error('Failed to fetch game state:', err));
+      
       // Subscribe to game channel
       console.log('Subscribing to game channel:', `game-${data.gameId}`);
       const gameChannel = pusherClient.subscribe(`game-${data.gameId}`);
       
       gameChannel.bind('move-made', (moveData: any) => {
         console.log('Move received:', moveData);
-        setChessBoard(moveData.move.newBoard);
-        setLastMove([moveData.move.from, moveData.move.to]);
+        // Flip board for black player
+        const board = onlinePlayerColor === 'black' ? flipBoardForBlack(moveData.move.newBoard) : moveData.move.newBoard;
+        setChessBoard(board);
+        
+        // Also flip the move coordinates for black player
+        if (onlinePlayerColor === 'black') {
+          setLastMove([[7 - moveData.move.from[0], 7 - moveData.move.from[1]], 
+                       [7 - moveData.move.to[0], 7 - moveData.move.to[1]]]);
+        } else {
+          setLastMove([moveData.move.from, moveData.move.to]);
+        }
+        
         setCurrentTurn(moveData.currentTurn);
         
         if (moveData.winner) {
@@ -457,6 +479,11 @@ export default function FunZone() {
       playerChannel.unsubscribe();
     };
   }, [pusherClient, onlinePlayerId, onlinePlayerColor]);
+
+  // Helper function to flip board for black player
+  const flipBoardForBlack = (board: string[][]): string[][] => {
+    return board.map(row => [...row]).reverse().map(row => row.reverse());
+  };
 
   const findOnlineMatch = async () => {
     setMatchmakingStatus('searching');
@@ -538,6 +565,11 @@ export default function FunZone() {
       const piece = chessBoard[from[0]][from[1]];
       const winner = checkWinner(newBoard);
 
+      // Black player sees flipped board, so unflip coordinates and board for server
+      const serverFrom = onlinePlayerColor === 'black' ? [7 - from[0], 7 - from[1]] as [number, number] : from;
+      const serverTo = onlinePlayerColor === 'black' ? [7 - to[0], 7 - to[1]] as [number, number] : to;
+      const serverBoard = onlinePlayerColor === 'black' ? flipBoardForBlack(newBoard) : newBoard;
+
       await fetch('/api/chess-matchmaking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -546,16 +578,16 @@ export default function FunZone() {
           gameId: onlineGameId,
           playerId: onlinePlayerId,
           move: {
-            from,
-            to,
+            from: serverFrom,
+            to: serverTo,
             piece,
-            newBoard,
+            newBoard: serverBoard,
             winner
           }
         }),
       });
 
-      // Update local state
+      // Update local state (keep flipped for black player)
       setChessBoard(newBoard);
       setLastMove([from, to]);
       setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
