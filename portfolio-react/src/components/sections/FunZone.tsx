@@ -430,6 +430,15 @@ export default function FunZone() {
     
     const playerName = localStorage.getItem('snakePlayerName') || 'Player';
     
+    // Set a timeout - if no match in 30 seconds, offer to play vs computer
+    const timeoutId = setTimeout(() => {
+      if (matchmakingStatus === 'searching') {
+        setChessMessage('No opponent found. Try again or play vs computer.');
+        setMatchmakingStatus('idle');
+        cancelOnlineMatch();
+      }
+    }, 30000); // 30 seconds
+    
     try {
       const response = await fetch('/api/chess-matchmaking', {
         method: 'POST',
@@ -445,15 +454,17 @@ export default function FunZone() {
       
       if (data.status === 'matched') {
         // Match found immediately
+        clearTimeout(timeoutId);
         setOnlineGameId(data.gameId);
         setOnlinePlayerColor(data.color);
         setMatchmakingStatus('matched');
         // Opponent name will come via Pusher
       } else if (data.status === 'waiting') {
         // Still waiting
-        setChessMessage('Waiting for opponent...');
+        setChessMessage('Waiting for opponent... (30s timeout)');
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('Failed to find match:', error);
       setChessMessage('Failed to connect. Try again.');
       setMatchmakingStatus('idle');
@@ -1699,25 +1710,45 @@ export default function FunZone() {
               {chessMode === 'online' && (
                 <div className="mb-4">
                   {matchmakingStatus === 'idle' && (
-                    <button
-                      onClick={findOnlineMatch}
-                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-300 hover:scale-105"
-                    >
-                      🔍 Find Online Match
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        onClick={findOnlineMatch}
+                        className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-300 hover:scale-105"
+                      >
+                        🔍 Find Online Match
+                      </button>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                        💡 Tip: Open in 2 browsers to test (or wait for another visitor)
+                      </p>
+                    </div>
                   )}
                   {matchmakingStatus === 'searching' && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-center space-x-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
                         <p className="text-green-600 font-semibold">Searching for opponent...</p>
                       </div>
-                      <button
-                        onClick={cancelOnlineMatch}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
-                      >
-                        Cancel
-                      </button>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Waiting for another player to join... (30s timeout)
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => {
+                            cancelOnlineMatch();
+                            setChessMode('1-player');
+                            resetChess();
+                          }}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors text-sm"
+                        >
+                          Play vs Computer Instead
+                        </button>
+                        <button
+                          onClick={cancelOnlineMatch}
+                          className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   )}
                   {matchmakingStatus === 'matched' && onlineOpponentName && (
