@@ -1003,21 +1003,41 @@ export default function FunZone() {
   const handleChessSquareClick = (row: number, col: number) => {
     if (gameOver) return;
     
+    console.log('=== CHESS SQUARE CLICKED ===');
+    console.log('Mode:', chessMode);
+    console.log('Position:', row, col);
+    console.log('Current turn:', currentTurn);
+    console.log('My color:', onlinePlayerColor);
+    
     const piece = chessBoard[row][col];
+    console.log('Piece at position:', piece);
     
     if (selectedSquare) {
       const [selectedRow, selectedCol] = selectedSquare;
       const selectedPiece = chessBoard[selectedRow][selectedCol];
       
+      console.log('Selected piece:', selectedPiece);
+      console.log('Is white piece?', isWhitePiece(selectedPiece));
+      console.log('Is black piece?', isBlackPiece(selectedPiece));
+      
       // In 2-player or online mode, check turn
       if (chessMode === '2-player' || chessMode === 'online') {
-        if (currentTurn === 'white' && !isWhitePiece(selectedPiece)) return;
-        if (currentTurn === 'black' && !isBlackPiece(selectedPiece)) return;
+        if (currentTurn === 'white' && !isWhitePiece(selectedPiece)) {
+          console.log('❌ Not your turn - white turn but selected black piece');
+          return;
+        }
+        if (currentTurn === 'black' && !isBlackPiece(selectedPiece)) {
+          console.log('❌ Not your turn - black turn but selected white piece');
+          return;
+        }
       }
 
       // In online mode, also check if it's your color's turn
       if (chessMode === 'online') {
-        if (currentTurn !== onlinePlayerColor) return;
+        if (currentTurn !== onlinePlayerColor) {
+          console.log('❌ Not your turn - waiting for opponent');
+          return;
+        }
       }
       
       // Try to move with rules (white in 1-player, or current turn in 2-player/online)
