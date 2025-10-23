@@ -264,18 +264,25 @@ export default async (req, context) => {
 
         // Notify opponent via Pusher - send the CURRENT board state, not the move's board
         const opponentId = gameData.white.id === playerId ? gameData.black.id : gameData.white.id;
-        await pusher.trigger(`game-${gameId}`, 'move-made', {
-          notation: move.notation,
-          board: gameData.board,  // Send current server board state
-          from: move.from,
-          to: move.to,
-          currentTurn: gameData.currentTurn,
-          status: gameData.status,
-          winner: move.winner
-        });
         
-        console.log('Move notification sent to game channel');
+        try {
+          await pusher.trigger(`game-${gameId}`, 'move-made', {
+            notation: move.notation,
+            board: gameData.board,  // Send current server board state
+            from: move.from,
+            to: move.to,
+            currentTurn: gameData.currentTurn,
+            status: gameData.status,
+            winner: move.winner
+          });
+          console.log('Move notification sent to game channel');
+        } catch (pusherError) {
+          console.error('Pusher trigger error:', pusherError);
+          console.error('Pusher error details:', pusherError.message);
+          // Don't fail the whole request if Pusher fails
+        }
 
+        console.log('Returning success response');
         return new Response(JSON.stringify({
           status: 'success',
           currentTurn: gameData.currentTurn
