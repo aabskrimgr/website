@@ -79,6 +79,7 @@ export default function FunZone() {
   const [onlinePlayerId] = useState<string>(`player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const [matchmakingStatus, setMatchmakingStatus] = useState<'idle' | 'searching' | 'matched'>('idle');
   const [pusherClient, setPusherClient] = useState<Pusher | null>(null);
+  const [matchmakingTimeoutId, setMatchmakingTimeoutId] = useState<number | null>(null);
   
   // Castling rights tracking
   const [castlingRights, setCastlingRights] = useState({
@@ -417,6 +418,13 @@ export default function FunZone() {
       console.log('Match found event received:', data);
       const myColor = data.color; // Capture color in this scope
       
+      // Clear matchmaking timeout if it exists
+      if (matchmakingTimeoutId) {
+        console.log('Clearing matchmaking timeout');
+        clearTimeout(matchmakingTimeoutId);
+        setMatchmakingTimeoutId(null);
+      }
+      
       setOnlineGameId(data.gameId);
       setOnlinePlayerColor(myColor);
       setOnlineOpponentName(data.opponent);
@@ -498,8 +506,13 @@ export default function FunZone() {
       console.log('Unsubscribing from player channel');
       playerChannel.unbind_all();
       playerChannel.unsubscribe();
+      
+      // Clear timeout on unmount
+      if (matchmakingTimeoutId) {
+        clearTimeout(matchmakingTimeoutId);
+      }
     };
-  }, [pusherClient, onlinePlayerId, onlinePlayerColor]);
+  }, [pusherClient, onlinePlayerId, onlinePlayerColor, matchmakingTimeoutId]);
 
   // Helper function to convert coordinates to chess notation (e.g., [0,0] -> "a8", [7,7] -> "h1")
   const coordsToChessNotation = (row: number, col: number): string => {
@@ -533,13 +546,20 @@ export default function FunZone() {
     
     // Set a timeout - if no match in 30 seconds, offer to play vs computer
     const timeoutId = setTimeout(() => {
-      if (matchmakingStatus === 'searching') {
-        console.log('Matchmaking timeout - no opponent found');
-        setChessMessage('No opponent found. Try again or play vs computer.');
-        setMatchmakingStatus('idle');
-        cancelOnlineMatch();
-      }
+      console.log('Matchmaking timeout - checking status');
+      setMatchmakingStatus((currentStatus) => {
+        if (currentStatus === 'searching') {
+          console.log('Still searching after 30s - canceling');
+          setChessMessage('No opponent found. Try again or play vs computer.');
+          cancelOnlineMatch();
+          return 'idle';
+        }
+        return currentStatus;
+      });
     }, 30000); // 30 seconds
+    
+    setMatchmakingTimeoutId(timeoutId);
+    console.log('Timeout set:', timeoutId);
     
     try {
       console.log('Calling matchmaking API...');
