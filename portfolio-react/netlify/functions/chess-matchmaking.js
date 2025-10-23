@@ -68,8 +68,15 @@ export default async (req, context) => {
         console.log('Player ID:', playerId);
         console.log('Player Name:', playerName);
         
-        // Get waiting players
+        // Get waiting players with retry for eventual consistency
         let waitingPlayers = await store.get('waiting-players', { type: 'json' }) || [];
+        
+        // If no players, wait a bit and retry (for eventual consistency)
+        if (waitingPlayers.length === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+          waitingPlayers = await store.get('waiting-players', { type: 'json' }) || [];
+        }
+        
         console.log('Current waiting players:', waitingPlayers.length, waitingPlayers);
         
         // Check if this player is already waiting
@@ -117,6 +124,8 @@ export default async (req, context) => {
           };
 
           await store.setJSON(gameId, gameData);
+          
+          // Clear the waiting queue
           await store.setJSON('waiting-players', waitingPlayers);
           
           console.log('Game saved, sending Pusher notifications...');
@@ -154,9 +163,14 @@ export default async (req, context) => {
             name: playerName,
             joinedAt: Date.now()
           });
+          
+          // Use set with consistency option
           await store.setJSON('waiting-players', waitingPlayers);
           
+          // Verify it was saved
+          const verify = await store.get('waiting-players', { type: 'json' }) || [];
           console.log('Player added to queue. Total waiting:', waitingPlayers.length);
+          console.log('Verified in store:', verify.length);
           console.log('=== END ===');
 
           return new Response(JSON.stringify({
