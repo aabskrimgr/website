@@ -2,13 +2,32 @@ import { getStore } from '@netlify/blobs';
 import Pusher from 'pusher';
 
 // Initialize Pusher - credentials will be set via environment variables
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET,
-  cluster: process.env.PUSHER_CLUSTER,
-  useTLS: true
-});
+let pusher;
+try {
+  console.log('Initializing Pusher with:', {
+    appId: process.env.PUSHER_APP_ID ? 'SET' : 'MISSING',
+    key: process.env.PUSHER_KEY ? 'SET' : 'MISSING',
+    secret: process.env.PUSHER_SECRET ? 'SET' : 'MISSING',
+    cluster: process.env.PUSHER_CLUSTER || 'MISSING'
+  });
+
+  if (!process.env.PUSHER_APP_ID || !process.env.PUSHER_KEY || !process.env.PUSHER_SECRET) {
+    console.error('ERROR: Pusher environment variables not set!');
+    throw new Error('Pusher environment variables missing');
+  }
+
+  pusher = new Pusher({
+    appId: process.env.PUSHER_APP_ID,
+    key: process.env.PUSHER_KEY,
+    secret: process.env.PUSHER_SECRET,
+    cluster: process.env.PUSHER_CLUSTER || 'ap1',
+    useTLS: true
+  });
+  
+  console.log('Pusher initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Pusher:', error);
+}
 
 export default async (req, context) => {
   // Enable CORS
@@ -23,11 +42,25 @@ export default async (req, context) => {
     return new Response(null, { status: 204, headers });
   }
 
+  // Check if Pusher is initialized
+  if (!pusher) {
+    console.error('Pusher not initialized - check environment variables');
+    return new Response(JSON.stringify({ 
+      error: 'Server configuration error',
+      details: 'Pusher not initialized. Check Netlify environment variables.'
+    }), { 
+      status: 500, 
+      headers 
+    });
+  }
+
   const store = getStore('chess-games');
 
   try {
     if (req.method === 'POST') {
       const { action, playerId, playerName, gameId, move } = await req.json();
+      
+      console.log('Received action:', action, 'from player:', playerId);
 
       // Join matchmaking queue
       if (action === 'findMatch') {
@@ -222,9 +255,11 @@ export default async (req, context) => {
 
   } catch (error) {
     console.error('Chess matchmaking error:', error);
+    console.error('Error stack:', error.stack);
     return new Response(JSON.stringify({ 
       error: 'Server error',
-      details: error.message 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }), { 
       status: 500, 
       headers 
